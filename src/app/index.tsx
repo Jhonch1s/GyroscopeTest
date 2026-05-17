@@ -1,8 +1,22 @@
-import { GyroscopeScreen } from "@/screens/GyroscopeScreen";
+import Skiacard from "@/components/Skiacard";
 import React from "react";
+import {
+  SafeAreaView,
+  StyleSheet
+} from "react-native";
 
-const App = () => {
-  return <GyroscopeScreen />;
-};
+export default function GyroscopeScreen() {
 
-export default App;
+  return (
+    <SafeAreaView style={styles.safe}>
+      <Skiacard></Skiacard>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: "#111",
+  },
+});
