@@ -167,9 +167,9 @@ export default function SkiaCard() {
     }));
     const font = useFont(UncialAntiqua_400Regular, 20);
 
-    const TEXT = "El mati se la come";
-    const TEXT2 = "y se regocija";
-    const TEXT3 = "en el infierno";
+    const TEXT = "El mati despues";
+    const TEXT2 = "de que pierde";
+    const TEXT3 = "el bolso pechofrio";
 
     const textX = useDerivedValue(() => {
         if (!font) return CX;
