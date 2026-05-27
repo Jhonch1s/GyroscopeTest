@@ -10,11 +10,11 @@ import {
     Rect,
     Shader,
     Skia,
+    SkRuntimeEffect,
     Text,
-    useFont,
-    useImage
+    useFont
 } from "@shopify/react-native-skia";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
     StyleSheet,
     View
@@ -68,22 +68,36 @@ const LIGHTING_SKSL = `
   }
 `;
 
-//ACÁ se compila el shader
-const lightingEffect = Skia.RuntimeEffect.Make(LIGHTING_SKSL)!;
 
-if (!lightingEffect) {
-    throw new Error("Error compilando el lighting shader");
-}
-
-export default function SkiaCard() {
+export default function SkiaCard({background,center,normal,texto} : {background:any,center:any,normal:any,texto:string}) {
     //assets de nuestra cartita
-
-    const bgImage = useImage(require("../../assets/images/fondo1.png"));
-    const centerImage = useImage(require("../../assets/images/image1.png"));
-    const normalMap = useImage(require("../../assets/images/paper1.jpg"));
 
     //giroscipio por Reanimated
     const sensor = useAnimatedSensor(SensorType.GYROSCOPE, { interval: 16 });
+
+    
+    const palabras = texto.split(' ');
+    let lineas = ['', '', ''];
+    let idx = 0;
+
+    for (let i = 0; i < 3; i++) {
+    let linea = '';
+    while (idx < palabras.length && (linea + (linea ? ' ' : '') + palabras[idx]).length <= 20) {
+        linea += (linea ? ' ' : '') + palabras[idx++];
+    }
+    if (linea.length < 16 && idx < palabras.length) {
+        linea += ' ' + palabras[idx++];
+    }
+    lineas[i] = linea;
+    }
+    while (idx < palabras.length) lineas[2] += ' ' + palabras[idx++];
+
+    const [texto1, texto2, texto3] = lineas;
+
+
+    const [lightingEffect, setLightingEffect] = useState<SkRuntimeEffect | null>(null);
+
+ 
 
     //valores de rotacion acumulados (los radianes, ahora gira la carta)
     const rotX = useSharedValue(0);
@@ -167,9 +181,9 @@ export default function SkiaCard() {
     }));
     const font = useFont(UncialAntiqua_400Regular, 20);
 
-    const TEXT = "El mati despues";
-    const TEXT2 = "de que pierde";
-    const TEXT3 = "el bolso pechofrio";
+    const TEXT = texto1;
+    const TEXT2 = texto2;
+    const TEXT3 = texto3;
 
     const textX = useDerivedValue(() => {
         if (!font) return CX;
@@ -187,7 +201,27 @@ export default function SkiaCard() {
         return CX - w / 2;
     });
 
-    if (!bgImage || !centerImage || !normalMap) {
+     useEffect(() => {
+    // Ensure Skia is defined before compiling
+    if (Skia && Skia.RuntimeEffect) {
+      try {
+        const effect = Skia.RuntimeEffect.Make(LIGHTING_SKSL);
+        if (effect) {
+          setLightingEffect(effect);
+        } else {
+          console.error("Failed to compile shader");
+        }
+      } catch (err) {
+        console.error("Shader compilation error:", err);
+      }
+    }
+  }, []); // runs once after mount
+
+  if (!lightingEffect) {
+    return null; // or a loading spinner
+  }
+
+    if (!background || !center || !normal) {
         return null; // O un loading state
     }
 
@@ -200,7 +234,7 @@ export default function SkiaCard() {
 
                     {/* Capa 1: Fondo + Borde */}
                     <Image
-                        image={bgImage}
+                        image={background}
                         x={PADDING}        // ← antes era 0
                         y={PADDING}
                         width={CARD_W}
@@ -210,7 +244,7 @@ export default function SkiaCard() {
 
                     {/* Capa 2: Imagen central */}
                     <Image
-                        image={centerImage}
+                        image={center}
                         x={PADDING + CARD_W * 0.10}
                         y={PADDING + CARD_H * 0.15}
                         width={CARD_W * 0.80}
@@ -256,7 +290,7 @@ export default function SkiaCard() {
                     >
                         <Shader source={lightingEffect} uniforms={uniforms}>
                             <ImageShader
-                                image={normalMap}
+                                image={normal}
                                 x={PADDING}
                                 y={PADDING}
                                 width={CARD_W}
