@@ -8,7 +8,7 @@ import {
 
 export default function GyroscopeScreen() {
   const fondo = useImage(require("../../assets/images/pokmeon.png"));
-  const centro = useImage(require("../../assets/images/bob.jpg"));
+  const centro = useImage(require("../../assets/images/buffkirk.jpeg"));
   const normalMap = useImage(require("../../assets/images/paper1.jpg"));
   const contenido = "Un desvío es el camino mas corto";
 

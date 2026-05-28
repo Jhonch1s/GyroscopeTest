@@ -5,6 +5,7 @@ import {
 import { Text } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SceneMap, TabView } from 'react-native-tab-view';
+import nextCard from "../app/nextCard";
 import homeScreen from "../screens/homeScreen";
 
 
@@ -25,7 +26,7 @@ const SecondRoute = () => (
 
 const renderScene = SceneMap({
   first: homeScreen,
-  second: SecondRoute,
+  second: nextCard,
 });
 
 const routes = [
