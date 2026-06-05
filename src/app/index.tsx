@@ -10,7 +10,7 @@ import CardViewerScreen from '../screens/CardViewerScreen';
 export default function App() {
   const layout = useWindowDimensions();
   const [index, setIndex] = React.useState(0);
-  const [selectedCardId, setSelectedCardId] = React.useState<string | undefined>();
+  const [selectedCardId, setSelectedCardId] = React.useState<number | undefined>();
   const insets = useSafeAreaInsets();
 
   const routes = [
@@ -19,7 +19,7 @@ export default function App() {
     { key: 'viewer', title: 'Visor 3D' },
   ];
 
-  const handleCardSelect = (cardId: string) => {
+  const handleCardSelect = (cardId: number) => {
     setSelectedCardId(cardId);
     setIndex(2); // Cambiar a la pestaña de Visor 3D
   };

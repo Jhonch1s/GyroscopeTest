@@ -1,25 +1,40 @@
-export type Rarity = 'Común' | 'Raro' | 'Épico' | 'Legendario';
-export type Difficulty = 'Fácil' | 'Media' | 'Difícil' | 'Extrema';
+export type CategoriaCarta = 'Común' | 'Raro' | 'Épico' | 'Legendario';
+export type TipoMision = 'Fácil' | 'Media' | 'Difícil' | 'Extrema';
 
-export interface Card {
-  id: string;
-  name: string;
-  rarity: Rarity;
-  image: string; // URL o path temporal para hardcode
-  description: string;
+export interface Perfil {
+  id: number;
+  nombre: string;
+  email: string | null;
+  contrasena: string | null;
+  f_nac: string | null;
+  creado_en: string;
 }
 
-export interface Activity {
-  id: string;
-  title: string;
-  difficulty: Difficulty;
-  completed: boolean;
-  rewardRarity: Rarity;
+export interface Carta {
+  id: number;
+  nombre_carta: string | null;
+  categoria: CategoriaCarta;
+  borde: string | null;
+  imagen: string | null;
+  centro: string | null;
+  normal_map: string | null;
+  texto: string | null;
+  propietario: number | null;
+  creada_en: string;
 }
 
-export interface User {
-  id: string;
-  username: string;
-  avatar: string;
-  unlockedCards: string[]; // Array de Card IDs
+export interface Mision {
+  id: number;
+  tipo: TipoMision;
+  nombre: string;
+  descripcion: string | null;
+  recompensa: CategoriaCarta;
+}
+
+export interface ProgresoUsuario {
+  id: number;
+  perfil_id: number;
+  mision_id: number;
+  completado: boolean;
+  fecha: string;
 }

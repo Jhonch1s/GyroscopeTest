@@ -1,24 +1,52 @@
 import Skiacard from "@/components/Skiacard";
 import { useImage } from "@shopify/react-native-skia";
-import React from "react";
-import { SafeAreaView, Text, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import { SafeAreaView, Text, View, ActivityIndicator } from "react-native";
 import { styles } from "./styles/CardViewerScreen.styles";
-import { mockCards } from "../data/mockData";
+import { supabase } from "../lib/supabase";
+import { Carta } from "../types";
+import { getLocalImage } from "../utils/imageMapper";
 
 interface Props {
-  cardId?: string;
+  cardId?: number;
 }
 
 export default function CardViewerScreen({ cardId }: Props) {
-  // Encuentra la carta seleccionada o usa la primera por defecto
-  const card = cardId ? mockCards.find(c => c.id === cardId) : mockCards[0];
+  const [card, setCard] = useState<Carta | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // En una app real, cada carta tendría su propia imagen de fondo/centro.
-  // Aquí usamos la de la carta, y fallback para el normalMap.
-  const fondo = useImage(card?.image as any);
-  const centro = useImage(card?.image as any);
-  const normalMap = useImage(require("../../assets/images/paper1.jpg"));
-  const contenido = card?.description || "Un desvío es el camino mas corto";
+  useEffect(() => {
+    async function loadCard() {
+      try {
+        if (cardId) {
+          const { data } = await supabase.from('carta').select('*').eq('id', cardId).single();
+          if (data) setCard(data);
+        } else {
+          // Fallback a una carta cualquiera si no hay ID
+          const { data } = await supabase.from('carta').select('*').limit(1).single();
+          if (data) setCard(data);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadCard();
+  }, [cardId]);
+
+  const fondo = useImage(getLocalImage(card?.imagen));
+  const centro = useImage(getLocalImage(card?.centro));
+  const normalMap = useImage(getLocalImage(card?.normal_map || 'paper1.jpg'));
+  const contenido = card?.texto || "Un desvío es el camino mas corto";
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#3498db" />
+      </SafeAreaView>
+    );
+  }
 
   if (!card) {
     return (

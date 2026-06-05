@@ -1,13 +1,41 @@
-import React from 'react';
-import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { mockCards, mockUser } from '../data/mockData';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { supabase } from '../lib/supabase';
+import { Carta, Perfil } from '../types';
+import { getLocalImage } from '../utils/imageMapper';
 import { styles } from './styles/CatalogScreen.styles';
 
 interface Props {
-  onCardSelect?: (cardId: string) => void;
+  onCardSelect?: (cardId: number) => void;
 }
 
 export default function CatalogScreen({ onCardSelect }: Props) {
+  const [cartas, setCartas] = useState<Carta[]>([]);
+  const [unlockedIds, setUnlockedIds] = useState<number[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCatalog();
+  }, []);
+
+  const fetchCatalog = async () => {
+    try {
+      // Fetch all cards
+      const { data: cardsData, error: cardsError } = await supabase.from('carta').select('*');
+      if (cardsError) throw cardsError;
+      setCartas(cardsData || []);
+
+      // Simular que el usuario tiene la primera y la segunda carta (por id) 
+      // En la app real se obtendría del perfil, o al asignar 'propietario'
+      const ownCards = cardsData?.filter(c => c.propietario) || [];
+      setUnlockedIds(ownCards.map(c => c.id));
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
       case 'Común': return '#a0a0a0'; 
@@ -18,18 +46,26 @@ export default function CatalogScreen({ onCardSelect }: Props) {
     }
   };
 
+  if (loading) {
+    return (
+      <View style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color="#3498db" />
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.safe} contentContainerStyle={styles.contentContainer}>
       <View style={styles.header}>
         <Text style={styles.title}>Tu Colección</Text>
         <Text style={styles.subtitle}>
-          {mockUser.unlockedCards.length} / {mockCards.length} desbloqueadas
+          {unlockedIds.length} / {cartas.length} desbloqueadas
         </Text>
       </View>
 
       <View style={styles.grid}>
-        {mockCards.map((card) => {
-          const isUnlocked = mockUser.unlockedCards.includes(card.id);
+        {cartas.map((card) => {
+          const isUnlocked = unlockedIds.includes(card.id);
 
           return (
             <TouchableOpacity 
@@ -39,9 +75,10 @@ export default function CatalogScreen({ onCardSelect }: Props) {
               disabled={!isUnlocked}
               onPress={() => onCardSelect && onCardSelect(card.id)}
             >
-              <View style={[styles.imageContainer, { borderColor: isUnlocked ? getRarityColor(card.rarity) : '#333' }]}>
+              <View style={[styles.imageContainer, { borderColor: isUnlocked ? getRarityColor(card.categoria) : '#333' }]}>
                 {isUnlocked ? (
-                  <Image source={card.image as any} style={styles.cardImage} resizeMode="cover" />
+                  // Usamos la imagen central como miniatura del catálogo
+                  <Image source={getLocalImage(card.centro)} style={styles.cardImage} resizeMode="cover" />
                 ) : (
                   <View style={styles.placeholderImage}>
                     <Text style={styles.questionMark}>?</Text>
@@ -49,14 +86,14 @@ export default function CatalogScreen({ onCardSelect }: Props) {
                 )}
                 
                 {isUnlocked && (
-                  <View style={[styles.rarityBadge, { backgroundColor: getRarityColor(card.rarity) }]}>
-                    <Text style={styles.rarityText}>{card.rarity}</Text>
+                  <View style={[styles.rarityBadge, { backgroundColor: getRarityColor(card.categoria) }]}>
+                    <Text style={styles.rarityText}>{card.categoria}</Text>
                   </View>
                 )}
               </View>
               
               <Text style={[styles.cardName, !isUnlocked && styles.cardNameLocked]} numberOfLines={1}>
-                {isUnlocked ? card.name : 'Desconocido'}
+                {isUnlocked ? (card.nombre_carta || 'Carta') : 'Desconocido'}
               </Text>
             </TouchableOpacity>
           );
