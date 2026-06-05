@@ -20,29 +20,27 @@ export default function CatalogScreen({ onCardSelect }: Props) {
 
   const fetchCatalog = async () => {
     try {
-      // Fetch all cards
       const { data: cardsData, error: cardsError } = await supabase.from('carta').select('*');
       if (cardsError) throw cardsError;
       setCartas(cardsData || []);
 
-      // Simular que el usuario tiene la primera y la segunda carta (por id) 
-      // En la app real se obtendría del perfil, o al asignar 'propietario'
-      const ownCards = cardsData?.filter(c => c.propietario) || [];
-      setUnlockedIds(ownCards.map(c => c.id));
+      // Forzar desbloqueo total (Independiente del perfil)
+      setUnlockedIds((cardsData || []).map(c => c.id));
     } catch (error) {
-      console.error(error);
+      console.error("Error cargando el catálogo:", error);
     } finally {
       setLoading(false);
     }
   };
 
   const getRarityColor = (rarity: string) => {
-    switch (rarity) {
-      case 'Común': return '#a0a0a0'; 
-      case 'Raro': return '#3498db'; 
-      case 'Épico': return '#9b59b6'; 
-      case 'Legendario': return '#f1c40f'; 
-      default: return '#555';
+    // Agregamos variaciones por si en la Base de Datos está en minúscula o cambia
+    switch (rarity?.toLowerCase()) {
+      case 'común': case 'comun': return '#a0a0a0'; 
+      case 'raro': return '#3498db'; 
+      case 'épico': case 'epico': return '#9b59b6'; 
+      case 'legendario': return '#f1c40f'; 
+      default: return '#555'; // Color de respaldo
     }
   };
 
@@ -66,6 +64,9 @@ export default function CatalogScreen({ onCardSelect }: Props) {
       <View style={styles.grid}>
         {cartas.map((card) => {
           const isUnlocked = unlockedIds.includes(card.id);
+          
+          // 🛠️ Si card.centro viene vacío o no existe, usamos '7_1x1.jpg' que sabemos que sí está en tu árbol
+          const imageSource = getLocalImage(card.centro || '7_1x1.jpg');
 
           return (
             <TouchableOpacity 
@@ -77,15 +78,18 @@ export default function CatalogScreen({ onCardSelect }: Props) {
             >
               <View style={[styles.imageContainer, { borderColor: isUnlocked ? getRarityColor(card.categoria) : '#333' }]}>
                 {isUnlocked ? (
-                  // Usamos la imagen central como miniatura del catálogo
-                  <Image source={getLocalImage(card.centro)} style={styles.cardImage} resizeMode="cover" />
+                  <Image 
+                    source={imageSource} 
+                    style={styles.cardImage} 
+                    resizeMode="cover" 
+                  />
                 ) : (
                   <View style={styles.placeholderImage}>
                     <Text style={styles.questionMark}>?</Text>
                   </View>
                 )}
                 
-                {isUnlocked && (
+                {isUnlocked && card.categoria && (
                   <View style={[styles.rarityBadge, { backgroundColor: getRarityColor(card.categoria) }]}>
                     <Text style={styles.rarityText}>{card.categoria}</Text>
                   </View>
@@ -93,7 +97,7 @@ export default function CatalogScreen({ onCardSelect }: Props) {
               </View>
               
               <Text style={[styles.cardName, !isUnlocked && styles.cardNameLocked]} numberOfLines={1}>
-                {isUnlocked ? (card.nombre_carta || 'Carta') : 'Desconocido'}
+                {isUnlocked ? (card.nombre_carta || 'Carta sin nombre') : 'Desconocido'}
               </Text>
             </TouchableOpacity>
           );
@@ -102,5 +106,3 @@ export default function CatalogScreen({ onCardSelect }: Props) {
     </ScrollView>
   );
 }
-
-

@@ -5,7 +5,7 @@ import { Mision, Perfil } from '../types';
 import { supabase } from '../lib/supabase';
 import { getLocalImage } from '../utils/imageMapper';
 
-export default function HomeScreen() {
+export default function Home() {
   const [misiones, setMisiones] = useState<Mision[]>([]);
   const [perfil, setPerfil] = useState<Perfil | null>(null);
   const [loading, setLoading] = useState(true);
@@ -15,37 +15,46 @@ export default function HomeScreen() {
   }, []);
 
   const fetchData = async () => {
-    try {
-      // 1. Fetch random missions
-      const { data: missionsData, error: missionsError } = await supabase.rpc('get_daily_missions', { limit_count: 3 });
-      if (missionsError) throw missionsError;
-      
-      // 2. Fetch dummy user profile (assuming we seeded one)
-      const { data: profileData, error: profileError } = await supabase
-        .from('perfil')
-        .select('*')
-        .limit(1)
-        .single();
-        
-      if (profileError) {
-        console.warn("Perfil no encontrado, ¿ejecutaste el seed?");
-      } else {
-        setPerfil(profileData);
-      }
+  try {
+    setLoading(true);
 
-      setMisiones(missionsData || []);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
+    const { data: profileData, error: profileError } = await supabase
+      .from('perfil')
+      .select('*')
+      .limit(1)
+      .single();
+      
+    let userId = 1; 
+
+    if (profileError) {
+      console.warn("Perfil no encontrado en la consulta automática, usando ID: 1 como respaldo.");
+      setPerfil({ id: 1, nombre: 'JorgeKirko47' } as any);
+    } else if (profileData) {
+      userId = profileData.id;
+      setPerfil(profileData);
     }
-  };
+
+    const { data: missionsData, error: missionsError } = await supabase
+      .rpc('get_daily_missions', { 
+        p_perfil_id: userId, 
+        limit_count: 3 
+      });
+
+    if (missionsError) throw missionsError;
+    
+    setMisiones(missionsData || []);
+
+  } catch (error) {
+    console.error('Error cargando los datos de misiones:', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const completeActivity = async (id: number) => {
-    // Optimistic UI update
     setMisiones((prev) => prev.filter((m) => m.id !== id));
     
-    // Si tuvieras autenticación:
+    //cuando tengamos autenticacion
     // await supabase.from('progreso_usuario').insert({ perfil_id: perfil?.id, mision_id: id, completado: true });
     
     alert('¡Misión Completada!');
@@ -78,9 +87,6 @@ export default function HomeScreen() {
             <Text style={styles.greeting}>Hola,</Text>
             <Text style={styles.username}>{perfil?.nombre || 'Usuario'}</Text>
           </View>
-        </View>
-        <View style={styles.statsBadge}>
-          <Text style={styles.statsText}>🔥 Nivel 5</Text>
         </View>
       </View>
 
