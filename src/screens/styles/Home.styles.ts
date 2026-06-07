@@ -37,6 +37,16 @@ export const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
   },
+   registerButton: {
+    backgroundColor: '#3498db',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  registerButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
   statsBadge: {
     backgroundColor: 'rgba(255,255,255,0.1)',
     paddingHorizontal: 12,

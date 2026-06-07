@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Image, ScrollView, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
-import { styles } from './styles/Home.styles';
-import { Mision, Perfil } from '../types';
+import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { supabase } from '../lib/supabase';
+import { Mision, Perfil } from '../types';
 import { getLocalImage } from '../utils/imageMapper';
+import { styles } from './styles/Home.styles';
 
 export default function Home() {
   const [misiones, setMisiones] = useState<Mision[]>([]);
@@ -28,7 +28,7 @@ export default function Home() {
 
     if (profileError) {
       console.warn("Perfil no encontrado en la consulta automática, usando ID: 1 como respaldo.");
-      setPerfil({ id: 1, nombre: 'JorgeKirko47' } as any);
+      setPerfil({ id: 3, nombre: 'JorgeKirko47' } as any);
     } else if (profileData) {
       userId = profileData.id;
       setPerfil(profileData);

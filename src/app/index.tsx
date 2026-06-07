@@ -1,17 +1,18 @@
+import AuthScreen from '@/screens/AuthScreen';
 import * as React from 'react';
-import { View, useWindowDimensions, StyleSheet, Text, ActivityIndicator } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TabView, TabBar } from 'react-native-tab-view';
-
-import Home from '../screens/Home';
-import CatalogScreen from '../screens/CatalogScreen';
+import { TabBar, TabView } from 'react-native-tab-view';
 import CardViewerScreen from '../screens/CardViewerScreen';
+import CatalogScreen from '../screens/CatalogScreen';
+import Home from '../screens/Home';
 
 export default function App() {
   const layout = useWindowDimensions();
   const [index, setIndex] = React.useState(0);
   const [selectedCardId, setSelectedCardId] = React.useState<number | undefined>();
   const insets = useSafeAreaInsets();
+   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
 
   const routes = [
     { key: 'home', title: 'Inicio' },
@@ -27,7 +28,7 @@ export default function App() {
   const renderScene = ({ route }: any) => {
     switch (route.key) {
       case 'home':
-        return <Home />;
+         return <Home/>;
       case 'catalog':
         return <CatalogScreen onCardSelect={handleCardSelect} />;
       case 'viewer':
@@ -55,6 +56,10 @@ export default function App() {
       <ActivityIndicator size="large" color="#3498db" />
     </View>
   );
+
+  if (!isAuthenticated) {
+    return <AuthScreen onAuthSuccess={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom, paddingTop: insets.top }]}>
