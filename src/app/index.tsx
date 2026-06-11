@@ -1,23 +1,33 @@
-import AuthScreen from '@/screens/AuthScreen';
-import * as React from 'react';
-import { ActivityIndicator, StyleSheet, Text, View, useWindowDimensions } from "react-native";
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TabBar, TabView } from 'react-native-tab-view';
-import CardViewerScreen from '../screens/CardViewerScreen';
-import CatalogScreen from '../screens/CatalogScreen';
-import Home from '../screens/Home';
+import AuthScreen from "@/screens/AuthScreen";
+import CardGeneratorScreen from "@/screens/CardGeneratorScreen";
+import * as React from "react";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { TabBar, TabView } from "react-native-tab-view";
+import CardViewerScreen from "../screens/CardViewerScreen";
+import CatalogScreen from "../screens/CatalogScreen";
+import Home from "../screens/Home";
 
 export default function App() {
   const layout = useWindowDimensions();
   const [index, setIndex] = React.useState(0);
-  const [selectedCardId, setSelectedCardId] = React.useState<number | undefined>();
+  const [selectedCardId, setSelectedCardId] = React.useState<
+    number | undefined
+  >();
   const insets = useSafeAreaInsets();
-   const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
 
   const routes = [
-    { key: 'home', title: 'Inicio' },
-    { key: 'catalog', title: 'Catálogo' },
-    { key: 'viewer', title: 'Visor 3D' },
+    { key: "home", title: "Inicio" },
+    { key: "catalog", title: "Catálogo" },
+    { key: "viewer", title: "Visor 3D" },
+    { key: "cardGenerator", title: "Generador" },
   ];
 
   const handleCardSelect = (cardId: number) => {
@@ -27,12 +37,14 @@ export default function App() {
 
   const renderScene = ({ route }: any) => {
     switch (route.key) {
-      case 'home':
-         return <Home/>;
-      case 'catalog':
+      case "home":
+        return <Home />;
+      case "catalog":
         return <CatalogScreen onCardSelect={handleCardSelect} />;
-      case 'viewer':
+      case "viewer":
         return <CardViewerScreen cardId={selectedCardId} />;
+      case "cardGenerator":
+        return <CardGeneratorScreen />;
       default:
         return null;
     }
@@ -41,10 +53,16 @@ export default function App() {
   const renderTabBar = (props: any) => (
     <TabBar
       {...props}
-      indicatorStyle={{ backgroundColor: '#3498db' }}
-      style={{ backgroundColor: '#1a1a20' }}
+      indicatorStyle={{ backgroundColor: "#3498db" }}
+      style={{ backgroundColor: "#1a1a20" }}
       renderLabel={({ route, focused }: { route: any; focused: boolean }) => (
-        <Text style={{ color: focused ? '#3498db' : '#888', margin: 8, fontWeight: 'bold' }}>
+        <Text
+          style={{
+            color: focused ? "#3498db" : "#888",
+            margin: 8,
+            fontWeight: "bold",
+          }}
+        >
           {route.title}
         </Text>
       )}
@@ -62,15 +80,20 @@ export default function App() {
   }
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom, paddingTop: insets.top }]}>
+    <View
+      style={[
+        styles.container,
+        { paddingBottom: insets.bottom, paddingTop: insets.top },
+      ]}
+    >
       <TabView
         navigationState={{ index, routes }}
         renderScene={renderScene}
         renderTabBar={renderTabBar}
         onIndexChange={setIndex}
         initialLayout={{ width: layout.width }}
-        tabBarPosition='bottom'
-        lazy 
+        tabBarPosition="bottom"
+        lazy
         renderLazyPlaceholder={renderLazyPlaceholder}
       />
     </View>
@@ -80,12 +103,12 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0f0f13',
+    backgroundColor: "#0f0f13",
   },
   loadingPlaceholder: {
     flex: 1,
-    backgroundColor: '#0f0f13',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "#0f0f13",
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

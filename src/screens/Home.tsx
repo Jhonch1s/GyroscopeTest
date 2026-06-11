@@ -1,9 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import { supabase } from '../lib/supabase';
-import { Mision, Perfil } from '../types';
-import { getLocalImage } from '../utils/imageMapper';
-import { styles } from './styles/Home.styles';
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { supabase } from "../lib/supabase";
+import { Mision, Perfil } from "../types";
+import { getLocalImage } from "../utils/imageMapper";
+import { styles } from "./styles/Home.styles";
 
 export default function Home() {
   const [misiones, setMisiones] = useState<Mision[]>([]);
@@ -15,112 +22,138 @@ export default function Home() {
   }, []);
 
   const fetchData = async () => {
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const { data: profileData, error: profileError } = await supabase
-      .from('perfil')
-      .select('*')
-      .limit(1)
-      .single();
-      
-    let userId = 1; 
+      const { data: profileData, error: profileError } = await supabase
+        .from("perfil")
+        .select("*")
+        .limit(1)
+        .single();
 
-    if (profileError) {
-      console.warn("Perfil no encontrado en la consulta automática, usando ID: 1 como respaldo.");
-      setPerfil({ id: 3, nombre: 'JorgeKirko47' } as any);
-    } else if (profileData) {
-      userId = profileData.id;
-      setPerfil(profileData);
+      let userId = 1;
+
+      if (profileError) {
+        console.warn(
+          "Perfil no encontrado en la consulta automática, usando ID: 1 como respaldo.",
+        );
+        setPerfil({ id: 3, nombre: "JorgeKirko47" } as any);
+      } else if (profileData) {
+        userId = profileData.id;
+        setPerfil(profileData);
+      }
+
+      const { data: missionsData, error: missionsError } = await supabase.rpc(
+        "get_daily_missions",
+        {
+          p_perfil_id: userId,
+          limit_count: 3,
+        },
+      );
+
+      if (missionsError) throw missionsError;
+
+      setMisiones(missionsData || []);
+    } catch (error) {
+      console.error("Error cargando los datos de misiones:", error);
+    } finally {
+      setLoading(false);
     }
-
-    const { data: missionsData, error: missionsError } = await supabase
-      .rpc('get_daily_missions', { 
-        p_perfil_id: userId, 
-        limit_count: 3 
-      });
-
-    if (missionsError) throw missionsError;
-    
-    setMisiones(missionsData || []);
-
-  } catch (error) {
-    console.error('Error cargando los datos de misiones:', error);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const completeActivity = async (id: number) => {
     setMisiones((prev) => prev.filter((m) => m.id !== id));
-    
+
     //cuando tengamos autenticacion
     // await supabase.from('progreso_usuario').insert({ perfil_id: perfil?.id, mision_id: id, completado: true });
-    
-    alert('¡Misión Completada!');
+
+    alert("¡Misión Completada!");
   };
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
-      case 'Común': return '#a0a0a0'; 
-      case 'Raro': return '#3498db'; 
-      case 'Épico': return '#9b59b6'; 
-      case 'Legendario': return '#f1c40f'; 
-      default: return '#555';
+      case "Común":
+        return "#a0a0a0";
+      case "Raro":
+        return "#3498db";
+      case "Épico":
+        return "#9b59b6";
+      case "Legendario":
+        return "#f1c40f";
+      default:
+        return "#555";
     }
   };
 
   if (loading) {
     return (
-      <View style={[styles.safe, { justifyContent: 'center', alignItems: 'center' }]}>
+      <View
+        style={[
+          styles.safe,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
         <ActivityIndicator size="large" color="#3498db" />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.safe} contentContainerStyle={styles.contentContainer}>
+    <ScrollView
+      style={styles.safe}
+      contentContainerStyle={styles.contentContainer}
+    >
       <View style={styles.header}>
         <View style={styles.profileInfo}>
-          <Image source={getLocalImage('buffkirk.jpeg')} style={styles.avatar} />
+          <Image source={getLocalImage("buffkirk.jpg")} style={styles.avatar} />
           <View>
             <Text style={styles.greeting}>Hola,</Text>
-            <Text style={styles.username}>{perfil?.nombre || 'Usuario'}</Text>
+            <Text style={styles.username}>{perfil?.nombre || "Usuario"}</Text>
           </View>
         </View>
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Actividades de Hoy</Text>
-        <Text style={styles.sectionSubtitle}>Completa tareas para ganar sobres de cartas.</Text>
+        <Text style={styles.sectionSubtitle}>
+          Completa tareas para ganar sobres de cartas.
+        </Text>
 
         <View style={styles.activitiesList}>
           {misiones.length === 0 ? (
-            <Text style={{color: '#888'}}>No hay misiones disponibles.</Text>
-          ) : misiones.map((mision) => (
-            <View key={mision.id} style={styles.activityCard}>
-              <View style={styles.activityContent}>
-                <Text style={styles.activityTitle}>{mision.nombre}</Text>
-                <View style={styles.badgesRow}>
-                  <Text style={styles.difficultyBadge}>{mision.tipo}</Text>
-                  <Text style={[styles.rewardBadge, { color: getRarityColor(mision.recompensa) }]}>
-                    Sobre {mision.recompensa}
-                  </Text>
+            <Text style={{ color: "#888" }}>No hay misiones disponibles.</Text>
+          ) : (
+            misiones.map((mision) => (
+              <View key={mision.id} style={styles.activityCard}>
+                <View style={styles.activityContent}>
+                  <Text style={styles.activityTitle}>{mision.nombre}</Text>
+                  <View style={styles.badgesRow}>
+                    <Text style={styles.difficultyBadge}>{mision.tipo}</Text>
+                    <Text
+                      style={[
+                        styles.rewardBadge,
+                        { color: getRarityColor(mision.recompensa) },
+                      ]}
+                    >
+                      Sobre {mision.recompensa}
+                    </Text>
+                  </View>
                 </View>
-              </View>
 
-              <TouchableOpacity
-                style={[styles.claimButton, { backgroundColor: getRarityColor(mision.recompensa) }]}
-                onPress={() => completeActivity(mision.id)}
-              >
-                <Text style={styles.claimButtonText}>Completar</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
+                <TouchableOpacity
+                  style={[
+                    styles.claimButton,
+                    { backgroundColor: getRarityColor(mision.recompensa) },
+                  ]}
+                  onPress={() => completeActivity(mision.id)}
+                >
+                  <Text style={styles.claimButtonText}>Completar</Text>
+                </TouchableOpacity>
+              </View>
+            ))
+          )}
         </View>
       </View>
     </ScrollView>
   );
 }
-
-
