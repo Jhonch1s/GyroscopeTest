@@ -2,41 +2,101 @@
 
 ## What this is
 
-Expo SDK 55 app (React Native 0.83) that renders a parallax card effect driven by the device gyroscope. Uses `@shopify/react-native-skia` for a GLSL paper-texture shader and `react-native-reanimated` for animated parallax layers.
+Expo SDK 55 app (React Native 0.83, React 19.2) — a card catalog with gyroscope-driven 3D viewer. Uses `@shopify/react-native-skia` for the card renderer, `react-native-reanimated` for gyroscope sensor data, and `expo-router` for file-based routing.
+
+## Stack
+
+- **Backend**: Supabase (`@supabase/supabase-js`) — tables: `perfil`, `carta`, `mision`, `progreso_usuario`
+- **Auth**: Email/password gated in `index.tsx` via `isAuthenticated` state. Login queries `perfil` table directly comparing `email` + `contrasena` (plain text). Register inserts with plain text password. **`bcryptjs` is imported but never used in the active auth flow** — the unused `src/app/RegisterScreen.tsx` hashes but then stores `data.password` (unhashed).
+- **Forms**: Raw `TextInput` + `Alert` in `AuthScreen` (active). `react-hook-form` with `Controller` in unused `LoginScreen` / `RegisterScreen`.
+- **Sensors**: `react-native-reanimated`'s `useAnimatedSensor(SensorType.GYROSCOPE)` — used directly in `Skiacard.tsx` (not via `useGyroscope` hook).
+- **Navigation**: `react-native-tab-view` TabBar in `index.tsx` (3 tabs: Inicio, Catálogo, Visor 3D). Tab bar at bottom. Auth gate renders `AuthScreen` instead of tabs when unauthenticated.
+- **Fonts**: `@expo-google-fonts/uncial-antiqua` for card text in Skia
+- **Date picker**: `@react-native-community/datetimepicker` on register form
+- **AsyncStorage**: `@react-native-async-storage/async-storage` for Supabase auth session persistence
 
 ## Commands
 
 | Action | Command |
 |--------|---------|
 | Install deps | `npm install` |
-| Start dev server | `npx expo start` or `npm start` |
-| Android | `npm run android` (requires `expo run:android` build) |
-| iOS | `npm run ios` (requires `expo run:ios` build) |
+| Start dev | `npx expo start` or `npm start` |
+| Android | `npm run android` (requires pre-built native folder) |
+| iOS | `npm run ios` (requires pre-built native folder) |
 | Lint | `npm run lint` (runs `expo lint`) |
-| Reset project | `npm run reset-project` |
+| Typecheck | `npx tsc --noEmit` |
 
-No test suite is configured. No typecheck script — use `npx tsc --noEmit` manually if needed.
+No test suite configured.
 
 ## Architecture
 
 ```
 src/
-  app/index.tsx              ← single screen: 4 parallax layers + Skia shader
-  hooks/useGyroscope.ts      ← wraps reanimated's useAnimatedSensor(SensorType.GYROSCOPE)
+  app/
+    index.tsx           ← Auth gate + TabView (3 tabs: Home, Catalog, CardViewer)
+    LoginScreen.tsx     ← unused (uses react-hook-form, not rendered)
+    RegisterScreen.tsx  ← unused (uses react-hook-form + bcryptjs, not rendered)
+  components/
+    Skiacard.tsx        ← Skia-based 3D card renderer (gyroscope-driven rotation + lighting shader)
+  hooks/
+    useGyroscope.ts     ← thin wrapper around useAnimatedSensor (not currently used by Skiacard)
+  lib/
+    supabase.ts         ← Supabase client singleton (URL + anon key hardcoded)
+  screens/
+    AuthScreen.tsx      ← login/register toggle with date picker (active auth UI)
+    CardViewerScreen.tsx ← loads card from Supabase by cardId, renders Skiacard
+    CatalogScreen.tsx   ← grid of cards from Supabase, onCardSelect → switches to Visor 3D tab
+    Home.tsx            ← profile header + daily missions via RPC get_daily_missions
+    styles/
+      Home.styles.ts
+      CatalogScreen.styles.ts
+      CardViewerScreen.styles.ts
+  types/
+    index.ts            ← Carta, Perfil, Mision, ProgresoUsuario, CategoriaCarta, TipoMision
+  utils/
+    imageMapper.ts      ← maps string keys to local require(...) assets per rarity
 ```
 
-Entry point is `expo-router/entry` (see `package.json` "main"). Routing is file-based under `src/app/`.
+Entry point is `expo-router/entry`. Routing is file-based under `src/app/`.
+
+## Data flow
+
+1. `index.tsx` owns `isAuthenticated` state; if false → renders `<AuthScreen>`, else → renders `<TabView>`
+2. `AuthScreen` queries/performs insert on `perfil` table directly (plain text passwords)
+3. `Home` calls supabase RPC `get_daily_missions(p_perfil_id, limit_count)` for mission cards
+4. `CatalogScreen` loads all `carta` rows, displays in 2-column grid, forces full unlock
+5. Selecting a card in Catalog calls `onCardSelect(cardId)` → `index.tsx` sets `selectedCardId` + switches to tab index 2
+6. `CardViewerScreen` loads card by `cardId` from Supabase, passes Skia images to `Skiacard`
+
+## Assets structure
+
+```
+assets/
+  common/backgrounds/, images/, textures/
+  rare/backgrounds/, images/, textures/
+  epic/backgrounds/, images/
+  legendary/backgrounds/, images/
+  images/tabIcons/
+  expo.icon/Assets/
+```
+
+Images are resolved via `imageMapper.ts` using `require(...)` — add new entries to the map before use.
 
 ## Key conventions
 
-- **Path alias**: `@/*` → `./src/*` (tsconfig.json)
+- **Path alias**: `@/*` → `./src/*`
+- **React Compiler** enabled — do not add manual `memo()` or `useCallback`
 - **Typed routes** enabled (`app.json` experiments.typedRoutes)
-- **React Compiler** enabled (`app.json` experiments.reactCompiler) — do not add manual memoization
-- **Font loading**: `UncialAntiqua_400Regular` loaded via `@expo-google-fonts/uncial-antiqua`; screen returns `null` until fonts load
-- **No `_layout.tsx`** in `src/app/` — the app uses a single screen, no navigation stack
+- **No `_layout.tsx`** — single screen with TabView, no navigation stack
+- **Styles are separated** per screen in `src/screens/styles/` using `StyleSheet.create`
 
 ## Gotchas
 
-- `android/` and `ios/` folders are gitignored and generated by `expo run:*`. Do not edit native code directly.
-- `expo-env.d.ts` is gitignored and auto-generated — do not commit it.
-- `scripts/reset-project.js` destructively moves `src/` to `example/`. Never run it unintentionally.
+- `android/` and `ios/` are gitignored and generated by `expo run:*` — never edit native code directly
+- `expo-env.d.ts` is gitignored and auto-generated — do not commit it
+- `scripts/reset-project.js` destructively moves `src/` to `example/` — never run unintentionally
+- Supabase URL and anon key are hardcoded in `src/lib/supabase.ts` — not env-variable driven
+- Auth stores passwords in plain text (`perfil.contrasena`) — `bcryptjs` is imported in the unused `RegisterScreen` and `AuthScreen` does not use it at all
+- `Skiacard.tsx` uses its own `useAnimatedSensor` directly, not the `useGyroscope` hook in `src/hooks/`
+- The Skia lighting shader (`LIGHTING_SKSL`) is an inline string — changes require Metro rebuild
+- `imageMapper.ts` uses fallback to `'pokmeon.png'` on missing keys — ensure assets exist in the map
