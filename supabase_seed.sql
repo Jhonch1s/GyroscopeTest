@@ -83,6 +83,12 @@ CREATE POLICY "Permitir lectura publica carta" ON carta FOR SELECT USING (true);
 DROP POLICY IF EXISTS "Permitir lectura publica progreso" ON progreso_usuario;
 CREATE POLICY "Permitir lectura publica progreso" ON progreso_usuario FOR SELECT USING (true);
 
+-- Permitimos inserción publica a la tabla carta (necesario para el PackOpenerModal)
+DROP POLICY IF EXISTS "Permitir insercion publica carta" ON carta;
+CREATE POLICY "Permitir insercion publica carta" ON carta 
+FOR INSERT 
+WITH CHECK (true);
+
 -- 1. Permitir que cualquiera (o la función pública) pueda insertar registros de progreso
 DROP POLICY IF EXISTS "Permitir insercion publica progreso" ON progreso_usuario;
 CREATE POLICY "Permitir insercion publica progreso" ON progreso_usuario 
@@ -180,6 +186,7 @@ INSERT INTO mision (id, tipo, nombre, descripcion, recompensa) VALUES
 -----------------------------------------
 SELECT setval('perfil_id_seq', (SELECT MAX(id) FROM perfil));
 SELECT setval('mision_id_seq', (SELECT MAX(id) FROM mision));
+SELECT setval('carta_id_seq', (SELECT MAX(id) FROM carta));
 
 -----------------------------------------
 -- 8. RECARGAR CACHÉ DE SUPABASE API

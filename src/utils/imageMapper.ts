@@ -21,11 +21,34 @@ const imageMap: Record<string, any> = {
   "legendary/cosmos-middle.png": require("../../assets/legendary/textures/cosmos-middle.png"),
   "legendary/cosmos-top.png": require("../../assets/legendary/textures/cosmos-top.png"),
   "buffkirk.jpg": require("../../assets/images/buffkirk.jpg"),
+  "sobre/sobre.png": require("../../assets/sobre/sobre.png"),
 };
 
 export const getLocalImage = (assetKey: string | null | undefined): any => {
-  if (!assetKey || !imageMap[assetKey]) {
+  if (!assetKey) {
     return imageMap["common/bg_01.png"];
   }
-  return imageMap[assetKey];
+  
+  if (imageMap[assetKey]) {
+    return imageMap[assetKey];
+  }
+
+  // Fallback: buscar si alguna llave termina con el assetKey 
+  // (útil si la base de datos guardó "img_01.jpg" en lugar de "common/img_01.jpg")
+  const foundKey = Object.keys(imageMap).find(key => key.endsWith(assetKey));
+  if (foundKey) {
+    return imageMap[foundKey];
+  }
+
+  return imageMap["common/bg_01.png"];
+};
+
+export const mapRarityToDb = (rarity: string): string => {
+  switch (rarity) {
+    case "common": return "Comun";
+    case "rare": return "Raro";
+    case "epic": return "Epico";
+    case "legendary": return "Legendario";
+    default: return "Comun";
+  }
 };
