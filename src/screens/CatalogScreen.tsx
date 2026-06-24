@@ -65,8 +65,8 @@ export default function CatalogScreen({ onCardSelect }: Props) {
         {cartas.map((card) => {
           const isUnlocked = unlockedIds.includes(card.id);
           
-          // 🛠️ Si card.centro viene vacío o no existe, usamos '7_1x1.jpg' que sabemos que sí está en tu árbol
-          const imageSource = getLocalImage(card.centro || '7_1x1.jpg');
+          // 🛠️ Si card.centro viene vacío o no existe, usamos 'common/img_01.jpg' como respaldo
+          const imageSource = getLocalImage(card.centro || 'common/img_01.jpg');
 
           return (
             <TouchableOpacity 

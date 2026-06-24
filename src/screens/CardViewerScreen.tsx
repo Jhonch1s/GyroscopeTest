@@ -35,9 +35,9 @@ export default function CardViewerScreen({ cardId }: Props) {
     loadCard();
   }, [cardId]);
 
-  const fondo = useImage(getLocalImage(card?.imagen || 'fondo2.png'));
-  const centro = useImage(getLocalImage(card?.centro || '7_1x1.jpg'));
-  const normalMap = useImage(getLocalImage(card?.normal_map || 'buffkirk.jpeg'));
+  const fondo = useImage(getLocalImage(card?.imagen || 'common/bg_01.png'));
+  const centro = useImage(getLocalImage(card?.centro || 'common/img_01.jpg'));
+  const normalMap = useImage(getLocalImage(card?.normal_map || 'common/tex_01.jpg'));
   const contenido = card?.texto || "Un desvío es el camino mas corto";
 
   if (loading) {
