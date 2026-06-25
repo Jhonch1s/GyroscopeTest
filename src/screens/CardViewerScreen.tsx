@@ -1,11 +1,11 @@
 import Skiacard from "@/components/Skiacard";
 import { useImage } from "@shopify/react-native-skia";
 import React, { useEffect, useState } from "react";
-import { SafeAreaView, Text, View, ActivityIndicator } from "react-native";
-import { styles } from "./styles/CardViewerScreen.styles";
+import { ActivityIndicator, SafeAreaView, Text, View } from "react-native";
 import { supabase } from "../lib/supabase";
 import { Carta } from "../types";
 import { getLocalImage } from "../utils/imageMapper";
+import { styles } from "./styles/CardViewerScreen.styles";
 
 interface Props {
   cardId?: number;
