@@ -1,10 +1,10 @@
-import { useImage } from '@shopify/react-native-skia';
-import React, { useState } from 'react';
-import { ActivityIndicator, Button, SafeAreaView, View } from 'react-native';
-import { generateCardParts, CardParts } from '../utils/generateCard';
-import { getLocalImage } from '../utils/imageMapper';
-import Skiacard from '@/components/Skiacard';
-import { styles } from './styles/CardGeneratorScreen.styles';
+import Skiacard from "@/components/Skiacard";
+import { useImage } from "@shopify/react-native-skia";
+import React, { useState } from "react";
+import { ActivityIndicator, Button, SafeAreaView, View } from "react-native";
+import { CardParts, generateCardParts } from "../utils/generateCard";
+import { getLocalImage } from "../utils/imageMapper";
+import { styles } from "./styles/CardGeneratorScreen.styles";
 
 export default function CardGeneratorScreen() {
   const [parts, setParts] = useState<CardParts | null>(null);
@@ -14,7 +14,9 @@ export default function CardGeneratorScreen() {
     setParts(newParts);
   };
 
-  const backgroundImg = useImage(parts ? getLocalImage(parts.background.key) : null);
+  const backgroundImg = useImage(
+    parts ? getLocalImage(parts.background.key) : null,
+  );
   const centerImg = useImage(parts ? getLocalImage(parts.center.key) : null);
   const normalImg = useImage(parts ? getLocalImage(parts.normal.key) : null);
 
@@ -37,7 +39,7 @@ export default function CardGeneratorScreen() {
               background={backgroundImg}
               center={centerImg}
               normal={normalImg}
-              texto="Carta generada"
+              texto="Hola Bruno"
               rarity={parts.background.rarity}
             />
           </View>
@@ -46,8 +48,12 @@ export default function CardGeneratorScreen() {
         {parts && !isLoading && (
           <View style={styles.infoContainer}>
             <View style={styles.infoRow}>
-              <View style={[styles.badge, { backgroundColor: getRarityColor(parts.background.rarity) }]}>
-              </View>
+              <View
+                style={[
+                  styles.badge,
+                  { backgroundColor: getRarityColor(parts.background.rarity) },
+                ]}
+              ></View>
             </View>
           </View>
         )}
@@ -58,10 +64,15 @@ export default function CardGeneratorScreen() {
 
 function getRarityColor(rarity: string): string {
   switch (rarity) {
-    case 'common': return '#a0a0a0';
-    case 'rare': return '#3498db';
-    case 'epic': return '#9b59b6';
-    case 'legendary': return '#f1c40f';
-    default: return '#555';
+    case "common":
+      return "#a0a0a0";
+    case "rare":
+      return "#3498db";
+    case "epic":
+      return "#9b59b6";
+    case "legendary":
+      return "#f1c40f";
+    default:
+      return "#555";
   }
 }
