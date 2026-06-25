@@ -1,30 +1,50 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Image, Text, TouchableOpacity, View, FlatList } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { Carta, Perfil } from '../types';
 import { getLocalImage } from '../utils/imageMapper';
 import { styles } from './styles/CatalogScreen.styles';
 
 interface Props {
+  userId: number;
   onCardSelect?: (cardId: number) => void;
 }
 
-export default function CatalogScreen({ onCardSelect }: Props) {
+export default function CatalogScreen({ userId, onCardSelect }: Props) {
   const [cartas, setCartas] = useState<Carta[]>([]);
   const [unlockedIds, setUnlockedIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchCatalog();
-  }, []);
+
+    const subscription = supabase
+      .channel('custom-insert-channel')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'carta' },
+        (payload) => {
+          //cuando se inserta una carta, recargamos el catálogo
+          fetchCatalog();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, [userId]);
 
   const fetchCatalog = async () => {
     try {
-      const { data: cardsData, error: cardsError } = await supabase.from('carta').select('*');
+      const { data: cardsData, error: cardsError } = await supabase
+        .from('carta')
+        .select('*')
+        .eq('propietario', userId);
       if (cardsError) throw cardsError;
+      
       setCartas(cardsData || []);
-
-      // Forzar desbloqueo total (Independiente del perfil)
+      // Todas las cartas del catálogo del usuario están desbloqueadas
       setUnlockedIds((cardsData || []).map(c => c.id));
     } catch (error) {
       console.error("Error cargando el catálogo:", error);
@@ -34,13 +54,13 @@ export default function CatalogScreen({ onCardSelect }: Props) {
   };
 
   const getRarityColor = (rarity: string) => {
-    // Agregamos variaciones por si en la Base de Datos está en minúscula o cambia
+    // agragamos variaciones por si en la base de datos está en minúscula o cambia
     switch (rarity?.toLowerCase()) {
       case 'común': case 'comun': return '#a0a0a0'; 
       case 'raro': return '#3498db'; 
       case 'épico': case 'epico': return '#9b59b6'; 
       case 'legendario': return '#f1c40f'; 
-      default: return '#555'; // Color de respaldo
+      default: return '#555'; 
     }
   };
 
@@ -52,57 +72,64 @@ export default function CatalogScreen({ onCardSelect }: Props) {
     );
   }
 
-  return (
-    <ScrollView style={styles.safe} contentContainerStyle={styles.contentContainer}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Tu Colección</Text>
-        <Text style={styles.subtitle}>
-          {unlockedIds.length} / {cartas.length} desbloqueadas
-        </Text>
-      </View>
+  const renderItem = ({ item: card }: { item: Carta }) => {
+    const isUnlocked = unlockedIds.includes(card.id);
+    
+    // si card.centro viene vacío o no existe, usamos 'common/img_01.jpg' como respaldo
+    const imageSource = getLocalImage(card.centro || 'common/img_01.jpg');
 
-      <View style={styles.grid}>
-        {cartas.map((card) => {
-          const isUnlocked = unlockedIds.includes(card.id);
+    return (
+      <TouchableOpacity 
+        style={[styles.cardContainer, !isUnlocked && styles.cardLocked]}
+        activeOpacity={0.7}
+        disabled={!isUnlocked}
+        onPress={() => onCardSelect && onCardSelect(card.id)}
+      >
+        <View style={[styles.imageContainer, { borderColor: isUnlocked ? getRarityColor(card.categoria) : '#333' }]}>
+          {isUnlocked ? (
+            <Image 
+              source={imageSource} 
+              style={styles.cardImage} 
+              resizeMode="cover" 
+            />
+          ) : (
+            <View style={styles.placeholderImage}>
+              <Text style={styles.questionMark}>?</Text>
+            </View>
+          )}
           
-          // 🛠️ Si card.centro viene vacío o no existe, usamos '7_1x1.jpg' que sabemos que sí está en tu árbol
-          const imageSource = getLocalImage(card.centro || '7_1x1.jpg');
+          {isUnlocked && card.categoria && (
+            <View style={[styles.rarityBadge, { backgroundColor: getRarityColor(card.categoria) }]}>
+              <Text style={styles.rarityText}>{card.categoria}</Text>
+            </View>
+          )}
+        </View>
+        
+        <Text style={[styles.cardName, !isUnlocked && styles.cardNameLocked]} numberOfLines={1}>
+          {isUnlocked ? (card.nombre_carta || 'Carta sin nombre') : 'Desconocido'}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
 
-          return (
-            <TouchableOpacity 
-              key={card.id} 
-              style={[styles.cardContainer, !isUnlocked && styles.cardLocked]}
-              activeOpacity={0.7}
-              disabled={!isUnlocked}
-              onPress={() => onCardSelect && onCardSelect(card.id)}
-            >
-              <View style={[styles.imageContainer, { borderColor: isUnlocked ? getRarityColor(card.categoria) : '#333' }]}>
-                {isUnlocked ? (
-                  <Image 
-                    source={imageSource} 
-                    style={styles.cardImage} 
-                    resizeMode="cover" 
-                  />
-                ) : (
-                  <View style={styles.placeholderImage}>
-                    <Text style={styles.questionMark}>?</Text>
-                  </View>
-                )}
-                
-                {isUnlocked && card.categoria && (
-                  <View style={[styles.rarityBadge, { backgroundColor: getRarityColor(card.categoria) }]}>
-                    <Text style={styles.rarityText}>{card.categoria}</Text>
-                  </View>
-                )}
-              </View>
-              
-              <Text style={[styles.cardName, !isUnlocked && styles.cardNameLocked]} numberOfLines={1}>
-                {isUnlocked ? (card.nombre_carta || 'Carta sin nombre') : 'Desconocido'}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </ScrollView>
+  return (
+    <View style={styles.safe}>
+      <FlatList
+        data={cartas}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderItem}
+        numColumns={2}
+        contentContainerStyle={styles.contentContainer}
+        columnWrapperStyle={{ justifyContent: 'space-between', marginBottom: 16 }}
+        ListHeaderComponent={
+          <View style={styles.header}>
+            <Text style={styles.title}>Tu Colección</Text>
+            <Text style={styles.subtitle}>
+              Tienes {cartas.length} cartas
+            </Text>
+          </View>
+        }
+      />
+    </View>
   );
 }

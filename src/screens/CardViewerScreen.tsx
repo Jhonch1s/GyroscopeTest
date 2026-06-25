@@ -1,7 +1,7 @@
 import Skiacard from "@/components/Skiacard";
 import { useImage } from "@shopify/react-native-skia";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, SafeAreaView, Text, View } from "react-native";
+import { ActivityIndicator, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { supabase } from "../lib/supabase";
 import { Carta } from "../types";
 import { getLocalImage } from "../utils/imageMapper";
@@ -9,9 +9,10 @@ import { styles } from "./styles/CardViewerScreen.styles";
 
 interface Props {
   cardId?: number;
+  onClose?: () => void;
 }
 
-export default function CardViewerScreen({ cardId }: Props) {
+export default function CardViewerScreen({ cardId, onClose }: Props) {
   const [card, setCard] = useState<Carta | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -35,9 +36,9 @@ export default function CardViewerScreen({ cardId }: Props) {
     loadCard();
   }, [cardId]);
 
-  const fondo = useImage(getLocalImage(card?.imagen || 'fondo2.png'));
-  const centro = useImage(getLocalImage(card?.centro || '7_1x1.jpg'));
-  const normalMap = useImage(getLocalImage(card?.normal_map || 'buffkirk.jpeg'));
+  const fondo = useImage(getLocalImage(card?.borde || 'common/bg_01.png'));
+  const centro = useImage(getLocalImage(card?.centro || 'common/img_01.jpg'));
+  const normalMap = useImage(getLocalImage(card?.normal_map || 'common/tex_01.jpg'));
   const contenido = card?.texto || "Un desvío es el camino mas corto";
 
   if (loading) {
@@ -59,7 +60,12 @@ export default function CardViewerScreen({ cardId }: Props) {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={[styles.safe, { position: 'relative' }]}>
+      {onClose && (
+        <TouchableOpacity style={localStyles.closeBtn} onPress={onClose}>
+          <Text style={localStyles.closeBtnText}>← Volver</Text>
+        </TouchableOpacity>
+      )}
       <Skiacard 
         background={fondo} 
         center={centro} 
@@ -70,4 +76,19 @@ export default function CardViewerScreen({ cardId }: Props) {
   );
 }
 
-
+const localStyles = StyleSheet.create({
+  closeBtn: {
+    position: 'absolute',
+    top: 20,
+    left: 20,
+    zIndex: 10,
+    padding: 10,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 8,
+  },
+  closeBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  }
+});

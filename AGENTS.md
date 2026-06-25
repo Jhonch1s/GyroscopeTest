@@ -6,16 +6,16 @@ Expo SDK 55 app (React Native 0.83) that renders a parallax card effect driven b
 
 ## Commands
 
-| Action | Command |
-|--------|---------|
-| Install deps | `npm install` |
-| Start dev server | `npx expo start` or `npm start` |
-| Android | `npm run android` (requires `expo run:android` build) |
-| iOS | `npm run ios` (requires `expo run:ios` build) |
-| Lint | `npm run lint` (runs `expo lint`) |
-| Reset project | `npm run reset-project` |
+| Action       | Command                                              |
+| ------------ | ---------------------------------------------------- |
+| Install deps | `npm install`                                        |
+| Start dev    | `npx expo start` or `npm start`                      |
+| Android      | `npm run android` (requires pre-built native folder) |
+| iOS          | `npm run ios` (requires pre-built native folder)     |
+| Lint         | `npm run lint` (runs `expo lint`)                    |
+| Typecheck    | `npx tsc --noEmit`                                   |
 
-No test suite is configured. No typecheck script — use `npx tsc --noEmit` manually if needed.
+No test suite configured.
 
 ## Architecture
 
@@ -29,7 +29,8 @@ Entry point is `expo-router/entry` (see `package.json` "main"). Routing is file-
 
 ## Key conventions
 
-- **Path alias**: `@/*` → `./src/*` (tsconfig.json)
+- **Path alias**: `@/*` → `./src/*`
+- **React Compiler** enabled — do not add manual `memo()` or `useCallback`
 - **Typed routes** enabled (`app.json` experiments.typedRoutes)
 - **React Compiler** enabled (`app.json` experiments.reactCompiler) — do not add manual memoization
 - **Font loading**: `UncialAntiqua_400Regular` loaded via `@expo-google-fonts/uncial-antiqua`; screen returns `null` until fonts load

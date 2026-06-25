@@ -3,8 +3,10 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import React, { useState } from 'react';
 import { Alert, Button, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
+import { Perfil } from '../types';
+
 interface AuthScreenProps {
-  onAuthSuccess: () => void;
+  onAuthSuccess: (user: Perfil) => void;
 }
 
 export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
@@ -31,7 +33,7 @@ export default function AuthScreen({ onAuthSuccess }: AuthScreenProps) {
         .eq('contrasena', password); // texto plano (temporal)
       if (error) throw error;
       if (data && data.length > 0) {
-        onAuthSuccess();
+        onAuthSuccess(data[0] as Perfil);
       } else {
         Alert.alert('Error', 'Credenciales incorrectas');
       }
