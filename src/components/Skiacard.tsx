@@ -1,4 +1,6 @@
 import { UncialAntiqua_400Regular } from "@expo-google-fonts/uncial-antiqua";
+import { Orbitron_700Bold } from "@expo-google-fonts/orbitron";
+import { Cinzel_700Bold } from "@expo-google-fonts/cinzel";
 import {
   Canvas,
   Group,
@@ -390,18 +392,18 @@ export default function SkiaCard({
     time.value += dt;
     const { x, y } = sensor.sensor.value;
     const dz = 0.01;
-    if (Math.abs(y) > dz) {
+    if (Math.abs(x) > dz) {
       rotX.value = Math.max(
         -MAX_ROTATION,
-        Math.min(MAX_ROTATION, rotX.value + y * dt),
+        Math.min(MAX_ROTATION, rotX.value + x * dt),
       );
     } else {
       rotX.value *= 0.98;
     }
-    if (Math.abs(x) > dz) {
+    if (Math.abs(y) > dz) {
       rotY.value = Math.max(
         -MAX_ROTATION,
-        Math.min(MAX_ROTATION, rotY.value + x * dt),
+        Math.min(MAX_ROTATION, rotY.value + y * dt),
       );
     } else {
       rotY.value *= 0.98;
@@ -487,7 +489,14 @@ export default function SkiaCard({
   ]);
 
   // ── Font ───────────────────────────────────────────────────────────────────
-  const font = useFont(UncialAntiqua_400Regular, 20);
+  const gothicFont = useFont(UncialAntiqua_400Regular, 20);
+  const cyberFont = useFont(Orbitron_700Bold, 18);
+  const elegantFont = useFont(Cinzel_700Bold, 20);
+
+  const font = rarity === "common" ? gothicFont
+    : rarity === "legendary" ? elegantFont
+    : cyberFont;
+
   const textX = useDerivedValue(() =>
     !font ? CX : CX - font.getTextWidth(texto1) / 2,
   );
@@ -506,7 +515,14 @@ export default function SkiaCard({
   return (
     <View style={styles.container}>
       <Canvas style={{ width: CANVAS_W, height: CANVAS_H }}>
-        <Group matrix={cardMatrix}>
+        <Group
+          matrix={cardMatrix}
+          clip={Skia.RRectXY(
+            Skia.XYWHRect(PADDING, PADDING, CARD_W, CARD_H),
+            16,
+            16,
+          )}
+        >
           {/* ── Capa 1: Fondo ───────────────────────────────────────────── */}
           <Image
             image={background}

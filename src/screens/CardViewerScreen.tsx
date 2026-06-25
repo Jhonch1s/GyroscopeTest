@@ -5,7 +5,7 @@ import { SafeAreaView, Text, View, ActivityIndicator, TouchableOpacity, StyleShe
 import { styles } from "./styles/CardViewerScreen.styles";
 import { supabase } from "../lib/supabase";
 import { Carta } from "../types";
-import { getLocalImage } from "../utils/imageMapper";
+import { getLocalImage, mapDbToRarity } from "../utils/imageMapper";
 
 interface Props {
   cardId?: number;
@@ -71,6 +71,7 @@ export default function CardViewerScreen({ cardId, onClose }: Props) {
         center={centro} 
         normal={normalMap}
         texto={contenido}
+        rarity={mapDbToRarity(card.categoria)}
       />
     </SafeAreaView>
   );

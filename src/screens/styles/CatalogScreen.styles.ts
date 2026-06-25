@@ -14,7 +14,7 @@ export const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   header: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
   title: {
     color: '#fff',
@@ -25,18 +25,55 @@ export const styles = StyleSheet.create({
   subtitle: {
     color: '#888',
     fontSize: 16,
+    marginBottom: 20,
   },
-  grid: {
+  statsRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
+    justifyContent: 'space-around',
+    marginBottom: 20,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    paddingVertical: 14,
+  },
+  statItem: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  statDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  statCount: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  statLabel: {
+    color: '#888',
+    fontSize: 11,
+  },
+  filtersRow: {
+    gap: 8,
+    paddingBottom: 4,
+  },
+  filterPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  filterPillText: {
+    color: '#aaa',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  filterPillTextActive: {
+    color: '#fff',
   },
   cardContainer: {
     width: CARD_WIDTH,
     marginBottom: 8,
-  },
-  cardLocked: {
-    opacity: 0.5,
   },
   imageContainer: {
     width: '100%',
@@ -50,16 +87,6 @@ export const styles = StyleSheet.create({
   cardImage: {
     width: '100%',
     height: '100%',
-  },
-  placeholderImage: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  questionMark: {
-    color: '#333',
-    fontSize: 48,
-    fontWeight: 'bold',
   },
   rarityBadge: {
     position: 'absolute',
@@ -80,7 +107,28 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-  cardNameLocked: {
-    color: '#666',
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+    paddingBottom: 100,
+  },
+  emptyIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    color: '#888',
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

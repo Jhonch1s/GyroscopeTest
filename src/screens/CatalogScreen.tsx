@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Text, TouchableOpacity, View, FlatList } from 'react-native';
+import { ActivityIndicator, Image, Text, TouchableOpacity, View, FlatList, ScrollView } from 'react-native';
 import { supabase } from '../lib/supabase';
-import { Carta, Perfil } from '../types';
+import { Carta } from '../types';
 import { getLocalImage } from '../utils/imageMapper';
 import { styles } from './styles/CatalogScreen.styles';
 
@@ -10,10 +10,28 @@ interface Props {
   onCardSelect?: (cardId: number) => void;
 }
 
+const FILTERS = [
+  { key: 'all', label: 'Todos', color: '#3498db' },
+  { key: 'Comun', label: 'Común', color: '#a0a0a0' },
+  { key: 'Raro', label: 'Raro', color: '#3498db' },
+  { key: 'Epico', label: 'Épico', color: '#9b59b6' },
+  { key: 'Legendario', label: 'Legendario', color: '#f1c40f' },
+] as const;
+
+function getRarityColor(rarity: string): string {
+  switch (rarity?.toLowerCase()) {
+    case 'común': case 'comun': return '#a0a0a0';
+    case 'raro': return '#3498db';
+    case 'épico': case 'epico': return '#9b59b6';
+    case 'legendario': return '#f1c40f';
+    default: return '#555';
+  }
+}
+
 export default function CatalogScreen({ userId, onCardSelect }: Props) {
   const [cartas, setCartas] = useState<Carta[]>([]);
-  const [unlockedIds, setUnlockedIds] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedFilter, setSelectedFilter] = useState<string>('all');
 
   useEffect(() => {
     fetchCatalog();
@@ -23,8 +41,7 @@ export default function CatalogScreen({ userId, onCardSelect }: Props) {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'carta' },
-        (payload) => {
-          //cuando se inserta una carta, recargamos el catálogo
+        () => {
           fetchCatalog();
         }
       )
@@ -42,10 +59,7 @@ export default function CatalogScreen({ userId, onCardSelect }: Props) {
         .select('*')
         .eq('propietario', userId);
       if (cardsError) throw cardsError;
-      
       setCartas(cardsData || []);
-      // Todas las cartas del catálogo del usuario están desbloqueadas
-      setUnlockedIds((cardsData || []).map(c => c.id));
     } catch (error) {
       console.error("Error cargando el catálogo:", error);
     } finally {
@@ -53,16 +67,15 @@ export default function CatalogScreen({ userId, onCardSelect }: Props) {
     }
   };
 
-  const getRarityColor = (rarity: string) => {
-    // agragamos variaciones por si en la base de datos está en minúscula o cambia
-    switch (rarity?.toLowerCase()) {
-      case 'común': case 'comun': return '#a0a0a0'; 
-      case 'raro': return '#3498db'; 
-      case 'épico': case 'epico': return '#9b59b6'; 
-      case 'legendario': return '#f1c40f'; 
-      default: return '#555'; 
-    }
-  };
+  const rarityCounts = cartas.reduce<Record<string, number>>((acc, c) => {
+    const key = c.categoria || 'Comun';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+
+  const filteredCartas = selectedFilter === 'all'
+    ? cartas
+    : cartas.filter((c) => c.categoria === selectedFilter);
 
   if (loading) {
     return (
@@ -72,63 +85,128 @@ export default function CatalogScreen({ userId, onCardSelect }: Props) {
     );
   }
 
+  const renderHeader = () => (
+    <View style={styles.header}>
+      <Text style={styles.title}>Tu Colección</Text>
+      <Text style={styles.subtitle}>
+        Tienes {cartas.length} carta{cartas.length !== 1 ? 's' : ''}
+      </Text>
+
+      {cartas.length > 0 && (
+        <>
+          <View style={styles.statsRow}>
+            {FILTERS.filter((f) => f.key !== 'all').map((f) => (
+              <View key={f.key} style={styles.statItem}>
+                <View style={[styles.statDot, { backgroundColor: f.color }]} />
+                <Text style={styles.statCount}>{rarityCounts[f.key] || 0}</Text>
+                <Text style={styles.statLabel}>{f.label}</Text>
+              </View>
+            ))}
+          </View>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filtersRow}
+          >
+            {FILTERS.map((f) => {
+              const isActive = selectedFilter === f.key;
+              return (
+                <TouchableOpacity
+                  key={f.key}
+                  style={[
+                    styles.filterPill,
+                    isActive && { backgroundColor: f.color },
+                  ]}
+                  onPress={() => setSelectedFilter(f.key)}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.filterPillText,
+                      isActive && styles.filterPillTextActive,
+                    ]}
+                  >
+                    {f.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </>
+      )}
+    </View>
+  );
+
+  const renderEmpty = () => (
+    <View style={styles.emptyContainer}>
+      <Text style={styles.emptyIcon}>{"📦"}</Text>
+      <Text style={styles.emptyTitle}>Tu colección está vacía</Text>
+      <Text style={styles.emptySubtitle}>
+        Completa misiones en Inicio para obtener sobres de cartas
+      </Text>
+    </View>
+  );
+
+  const renderFilteredEmpty = () => (
+    <View style={styles.emptyContainer}>
+      <Text style={styles.emptyTitle}>Sin cartas de esta rareza</Text>
+      <Text style={styles.emptySubtitle}>
+        Prueba con otro filtro o abre más sobres
+      </Text>
+    </View>
+  );
+
   const renderItem = ({ item: card }: { item: Carta }) => {
-    const isUnlocked = unlockedIds.includes(card.id);
-    
-    // si card.centro viene vacío o no existe, usamos 'common/img_01.jpg' como respaldo
     const imageSource = getLocalImage(card.centro || 'common/img_01.jpg');
 
     return (
-      <TouchableOpacity 
-        style={[styles.cardContainer, !isUnlocked && styles.cardLocked]}
+      <TouchableOpacity
+        style={styles.cardContainer}
         activeOpacity={0.7}
-        disabled={!isUnlocked}
         onPress={() => onCardSelect && onCardSelect(card.id)}
       >
-        <View style={[styles.imageContainer, { borderColor: isUnlocked ? getRarityColor(card.categoria) : '#333' }]}>
-          {isUnlocked ? (
-            <Image 
-              source={imageSource} 
-              style={styles.cardImage} 
-              resizeMode="cover" 
-            />
-          ) : (
-            <View style={styles.placeholderImage}>
-              <Text style={styles.questionMark}>?</Text>
-            </View>
-          )}
-          
-          {isUnlocked && card.categoria && (
+        <View style={[styles.imageContainer, { borderColor: getRarityColor(card.categoria) }]}>
+          <Image
+            source={imageSource}
+            style={styles.cardImage}
+            resizeMode="cover"
+          />
+
+          {card.categoria && (
             <View style={[styles.rarityBadge, { backgroundColor: getRarityColor(card.categoria) }]}>
               <Text style={styles.rarityText}>{card.categoria}</Text>
             </View>
           )}
         </View>
-        
-        <Text style={[styles.cardName, !isUnlocked && styles.cardNameLocked]} numberOfLines={1}>
-          {isUnlocked ? (card.nombre_carta || 'Carta sin nombre') : 'Desconocido'}
+
+        <Text style={styles.cardName} numberOfLines={1}>
+          {card.nombre_carta || 'Carta sin nombre'}
         </Text>
       </TouchableOpacity>
     );
   };
 
+  if (cartas.length === 0) {
+    return (
+      <View style={styles.safe}>
+        {renderHeader()}
+        {renderEmpty()}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.safe}>
       <FlatList
-        data={cartas}
+        data={filteredCartas}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderItem}
         numColumns={2}
         contentContainerStyle={styles.contentContainer}
         columnWrapperStyle={{ justifyContent: 'space-between', marginBottom: 16 }}
-        ListHeaderComponent={
-          <View style={styles.header}>
-            <Text style={styles.title}>Tu Colección</Text>
-            <Text style={styles.subtitle}>
-              Tienes {cartas.length} cartas
-            </Text>
-          </View>
-        }
+        ListHeaderComponent={renderHeader}
+        ListEmptyComponent={renderFilteredEmpty}
       />
     </View>
   );

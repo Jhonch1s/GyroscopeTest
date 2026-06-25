@@ -64,3 +64,13 @@ export const mapRarityToDb = (rarity: string): string => {
     default: return "Comun";
   }
 };
+
+export const mapDbToRarity = (categoria: string): "common" | "rare" | "epic" | "legendary" => {
+  switch (categoria?.toLowerCase()) {
+    case "comun": case "común": return "common";
+    case "raro": return "rare";
+    case "epico": case "épico": return "epic";
+    case "legendario": return "legendary";
+    default: return "common";
+  }
+};
