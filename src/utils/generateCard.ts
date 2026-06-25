@@ -24,23 +24,23 @@ const RARITY_WEIGHTS: Record<Rarity, number> = {
 //medio a la fuerza pero es lo que hay
 const ASSET_POOLS: Record<Rarity, Record<AssetCategory, string[]>> = {
   common: {
-    backgrounds: ["bg_01.png", "bg_02.png"],
-    images: ["img_01.jpg", "img_02.jpg", "img_03.png"],
+    backgrounds: ["bg_01.png", "bg_02.png", "bg_03.png"],
+    images: ["img_01.jpg", "img_02.png", "img_03.png", "img_04.png", "img_05.png"],
     textures: ["tex_01.jpg"],
   },
   rare: {
     backgrounds: ["bg_01.png"],
-    images: ["img_01.jpg"],
-    textures: ["tex_01.png"],
+    images: ["img_01.png", "img_02.png", "img_03.png"],
+    textures: ["tex_01.jpg"],
   },
   epic: {
     backgrounds: ["bg_01.png"],
-    images: ["img_01.jpg"],
-    textures: [],
+    images: ["img_01.jpg", "img_02.png", "img_03.png"],
+    textures: ["tex_01.png"],
   },
   legendary: {
-    backgrounds: ["bg_01.png"],
-    images: ["img_01.jpg", "img_02.png", "img_03.png"],
+    backgrounds: ["bg_01.png", "bg_02.png"],
+    images: ["img_01.png", "img_02.png", "img_03.png", "img_04.png", "img_05.png"],
     textures: ["tex_01.jpg"],
   },
 };
@@ -69,11 +69,10 @@ function rollAsset(rarity: Rarity, category: AssetCategory): AssetPart {
 }
 
 export function generateCardParts(): CardParts {
-  const backgroundRarity = rollRarity();
-
+  const rarity = rollRarity();
   return {
-    background: rollAsset(backgroundRarity, "backgrounds"),
-    center: rollAsset(backgroundRarity, "images"),
-    normal: rollAsset(backgroundRarity, "textures"),
+    background: rollAsset(rarity, "backgrounds"),
+    center: rollAsset(rarity, "images"),
+    normal: rollAsset(rarity, "textures"),
   };
 }
