@@ -1,4 +1,7 @@
-import React, { useEffect, useState } from "react";
+import { useNavigation } from "@react-navigation/native";
+import React, { useEffect, useState, } from "react";
+
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
   ActivityIndicator,
   Image,
@@ -7,20 +10,25 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { RootStackParamList } from "../app/index";
+import PackOpenerModal from "../components/PackOpenerModal";
 import { supabase } from "../lib/supabase";
 import { Mision, Perfil } from "../types";
 import { getLocalImage } from "../utils/imageMapper";
+import DontTouchScreen from "./misiones/DontTouchScreen";
 import { styles } from "./styles/Home.styles";
-import PackOpenerModal from "../components/PackOpenerModal";
 
 interface Props {
   userId: number;
 }
 
+
+
 export default function Home({ userId }: Props) {
   const [misiones, setMisiones] = useState<Mision[]>([]);
   const [perfil, setPerfil] = useState<Perfil | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   
   const [showPackModal, setShowPackModal] = useState(false);
 
@@ -85,6 +93,10 @@ export default function Home({ userId }: Props) {
       }
     }
   };
+
+  const goToCountdown = () => {
+    return ( <DontTouchScreen></DontTouchScreen>)
+  }
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
@@ -170,6 +182,9 @@ export default function Home({ userId }: Props) {
               </View>
             ))
           )}
+          <TouchableOpacity onPress={() => navigation.navigate('DontTouch')}>
+            <Text style={styles.claimButtonText}>Countdown</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
