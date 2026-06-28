@@ -11,6 +11,8 @@
     "lint": "expo lint"
   },
   "dependencies": {
+    "@expo-google-fonts/cinzel": "^0.4.2",
+    "@expo-google-fonts/orbitron": "^0.4.2",
     "@expo-google-fonts/uncial-antiqua": "^0.4.1",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "^9.1.0",
@@ -18,6 +20,7 @@
     "@supabase/supabase-js": "^2.107.0",
     "bcryptjs": "^3.0.3",
     "expo": "~55.0.24",
+    "expo-av": "^16.0.8",
     "expo-constants": "~55.0.16",
     "expo-font": "~55.0.7",
     "expo-router": "~55.0.14",

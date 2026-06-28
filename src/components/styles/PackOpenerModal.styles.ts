@@ -97,9 +97,15 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
+  summaryItemText: {
+    color: "#aaa",
+    fontSize: 12,
+    marginTop: 2,
+  },
   summaryItemRarity: {
     color: "#3498db",
     fontSize: 14,
+    marginLeft: 10,
   },
   closeButton: {
     marginBottom: 40,
