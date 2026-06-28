@@ -1,8 +1,12 @@
 import AuthScreen from "@/screens/AuthScreen";
 import CardGeneratorScreen from "@/screens/CardGeneratorScreen";
+import DontTouchScreen from "@/screens/misiones/DontTouchScreen";
+import { createDrawerNavigator } from '@react-navigation/drawer';
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import * as React from "react";
 import {
   ActivityIndicator,
+  LogBox,
   StyleSheet,
   Text,
   View,
@@ -13,9 +17,19 @@ import { TabBar, TabView } from "react-native-tab-view";
 import CardViewerScreen from "../screens/CardViewerScreen";
 import CatalogScreen from "../screens/CatalogScreen";
 import Home from "../screens/Home";
-import { LogBox } from 'react-native';
 
-export default function App() {
+export type RootStackParamList = {
+  Auth: undefined;
+  MainTabs: undefined;
+  DontTouch: undefined;
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
+
+const Drawer = createDrawerNavigator();
+
+
+ function MainTabs({ userId }: { userId: number }) {
 
   LogBox.ignoreLogs(["Can't perform a React state update on a component that hasn't mounted yet"]);
   const layout = useWindowDimensions();
@@ -24,7 +38,6 @@ export default function App() {
     number | undefined
   >();
   const insets = useSafeAreaInsets();
-  const [userId, setUserId] = React.useState<number | null>(null);
 
   const routes = [
     { key: "home", title: "Inicio" },
@@ -74,10 +87,6 @@ export default function App() {
     </View>
   );
 
-  if (!userId) {
-    return <AuthScreen onAuthSuccess={(user) => setUserId(user.id)} />;
-  }
-
   return (
     <View
       style={[
@@ -103,6 +112,30 @@ export default function App() {
         />
       )}
     </View>
+  );
+}
+
+export default function App() {
+  const [userId, setUserId] = React.useState<number | null>(null);
+
+  // Si no hay userId, mostramos AuthScreen, pero dentro del Stack
+  // para mantener la navegación consistente.
+  return (
+    
+      <Drawer.Navigator screenOptions={{ headerShown: false }}>
+        {!userId ? (
+          <Drawer.Screen name="Auth">
+            {() => <AuthScreen onAuthSuccess={(user) => setUserId(user.id)} />}
+          </Drawer.Screen>
+        ) : (
+          <>
+            <Drawer.Screen name="MainTabs">
+              {() => <MainTabs userId={userId} />}
+            </Drawer.Screen>
+            <Drawer.Screen name="DontTouch" component={DontTouchScreen} />
+          </>
+        )}
+      </Drawer.Navigator>
   );
 }
 
