@@ -1,4 +1,6 @@
 import { UncialAntiqua_400Regular } from "@expo-google-fonts/uncial-antiqua";
+import { Orbitron_700Bold } from "@expo-google-fonts/orbitron";
+import { Cinzel_700Bold } from "@expo-google-fonts/cinzel";
 import {
   Canvas,
   Group,
@@ -37,7 +39,51 @@ const NORMAL_SCALE: Record<Rarity, number> = {
   common: 0.2,
   rare: 0.2,
   epic: 1.5,
-  legendary: 1.0,
+  legendary: 0.2,
+};
+
+interface LightingConfig {
+  lightColor: [number, number, number];
+  ambient: number;
+  diffuseStrength: number;
+  specularStrength: number;
+  specularPower: number;
+  saturation: number;
+}
+
+const LIGHTING_CONFIG: Record<Rarity, LightingConfig> = {
+  common: {
+    lightColor: [1.0, 0.97, 0.88],
+    ambient: 0.06,
+    diffuseStrength: 0.55,
+    specularStrength: 0.45,
+    specularPower: 48.0,
+    saturation: 1.0,
+  },
+  rare: {
+    lightColor: [1.0, 0.97, 0.88],
+    ambient: 0.06,
+    diffuseStrength: 0.55,
+    specularStrength: 0.45,
+    specularPower: 48.0,
+    saturation: 1.0,
+  },
+  epic: {
+    lightColor: [1.0, 0.97, 0.88],
+    ambient: 0.06,
+    diffuseStrength: 0.55,
+    specularStrength: 0.45,
+    specularPower: 48.0,
+    saturation: 1.0,
+  },
+  legendary: {
+    lightColor: [0.95, 0.88, 0.78],
+    ambient: 0.04,
+    diffuseStrength: 0.35,
+    specularStrength: 0.15,
+    specularPower: 24.0,
+    saturation: 0.3,
+  },
 };
 
 export type Rarity = "common" | "rare" | "epic" | "legendary";
@@ -48,6 +94,10 @@ const LIGHTING_SKSL = `
   uniform vec2  lightPos;
   uniform vec3  lightColor;
   uniform float ambient;
+  uniform float diffuseStrength;
+  uniform float specularStrength;
+  uniform float specularPower;
+  uniform float saturation;
   uniform vec2  resolution;
 
   half4 main(vec2 fragCoord) {
@@ -57,61 +107,96 @@ const LIGHTING_SKSL = `
     vec3 lightDir = normalize(vec3(lightPos - uv, 0.4));
     float diff = max(dot(n, lightDir), 0.0);
     vec3 halfV = normalize(lightDir + vec3(0.0, 0.0, 1.0));
-    float spec = pow(max(dot(n, halfV), 0.0), 48.0);
-    vec3 lighting = lightColor * (diff * 0.55 + spec * 0.45) + ambient;
+    float spec = pow(max(dot(n, halfV), 0.0), specularPower);
+
+    // Ajustar saturación del color de luz
+    float luma = dot(lightColor, vec3(0.299, 0.587, 0.114));
+    vec3 saturatedLight = mix(vec3(luma), lightColor, saturation);
+
+    vec3 lighting = saturatedLight * (diff * diffuseStrength + spec * specularStrength) + ambient;
     float alpha = diff * 0.3 + spec * 0.25;
     return half4(lighting * alpha, alpha);
   }
 `;
 
-// ─── Rare: grain texture + rainbow desplazado por tilt ───────────────────────
-// grain.webp modula el brillo; el hue varía con posición + tilt.
+// ─── Rare: glitter sparkles + rainbow holographic ───────────────────────────
+// glitter.png modula destellos; el hue varía con posición + tilt.
 const RARE_SKSL = `
-  uniform shader grainTex;
+  uniform shader glitterTex;
   uniform vec2  tilt;
   uniform float intensity;
+  uniform float time;
   uniform vec2  resolution;
 
   vec3 hsl2rgb(float h, float s, float l) {
     vec3 rgb = clamp(abs(mod(h*6.0 + vec3(0,4,2), 6.0) - 3.0) - 1.0, 0.0, 1.0);
     return l + s * (rgb - 0.5) * (1.0 - abs(2.0*l - 1.0));
+  }
+
+  // Hash para sparkle pseudo-aleatorio por pixel, poneleee
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
   }
 
   half4 main(vec2 fragCoord) {
     vec2 uv = fragCoord / resolution;
 
-    // Textura de grano se mueve con el tilt (paralax)
-    vec2 grainUV = fragCoord + tilt * 30.0;
-    vec3 grain = grainTex.eval(grainUV).rgb;
-    float luma = dot(grain, vec3(0.299, 0.587, 0.114));
+    // Glitter texture se mueve con tilt (paralax)
+    vec2 glitterUV = fragCoord + tilt * 60.0;
+    vec3 glitter = glitterTex.eval(glitterUV).rgb;
+    float luma = dot(glitter, vec3(0.299, 0.587, 0.114));
 
-    // Hue varía con posición y tilt — esto es lo que hace el "rainbow shift"
-    float hue = fract(uv.x * 0.6 + uv.y * 0.3 + tilt.x * 0.35 + tilt.y * 0.2);
-    vec3 rainbow = hsl2rgb(hue, 0.9, 0.6);
+    // Hue varía con posición y tilt — rainbow shift
+    float hue = fract(uv.x * 0.6 + uv.y * 0.3 + tilt.x * 0.4 + tilt.y * 0.25);
+    vec3 rainbow = hsl2rgb(hue, 0.95, 0.6);
 
-    // Solo los puntos brillantes del grain brillan
-    float sparkle = smoothstep(0.55, 1.0, luma);
-    vec3 color = rainbow * (0.4 + sparkle * 0.6);
+    // Sparkle: múltiples capas con distintas escalas y velocidades
+    // Capa 1: sparkles grandes y lentos
+    float cell1 = hash(floor(uv * 12.0));
+    float twinkle1 = sin(time * 2.0 + cell1 * 6.283) * 0.5 + 0.5;
+    float sparkle1 = smoothstep(0.6, 1.0, twinkle1 * luma);
+
+    // Capa 2: sparkles pequeños y rápidos
+    float cell2 = hash(floor(uv * 24.0) + 100.0);
+    float twinkle2 = sin(time * 4.5 + cell2 * 6.283) * 0.5 + 0.5;
+    float sparkle2 = smoothstep(0.7, 1.0, twinkle2 * luma) * 0.7;
+
+    // Capa 3: destellos individuales brillantes
+    float cell3 = hash(floor(uv * 8.0) + 200.0);
+    float twinkle3 = sin(time * 1.5 + cell3 * 12.566) * 0.5 + 0.5;
+    float flash = pow(twinkle3, 8.0) * step(0.85, luma) * 1.5;
+
+    float totalSparkle = sparkle1 + sparkle2 + flash;
+
+    // Color: rainbow base + blancos en los destellos
+    vec3 sparkleColor = mix(rainbow, vec3(1.0, 0.98, 0.95), totalSparkle * 0.6);
+    vec3 color = sparkleColor * (0.5 + totalSparkle * 0.5);
 
     // Glare extra al inclinar
-    color += smoothstep(0.3, 1.0, intensity) * 0.2;
+    color += smoothstep(0.2, 1.0, intensity) * rainbow * 0.15;
 
-    float alpha = (0.25 + sparkle * 0.35) * max(intensity, 0.15);
+    float alpha = (0.45 + totalSparkle * 0.55) * max(intensity, 0.25);
     return half4(color * alpha, alpha);
   }
 `;
 
-// ─── Epic: foil illusion.png + cromado iridiscente ───────────────────────────
-// illusion.png se desplaza agresivamente con tilt → efecto "oil slick" cromado.
+// ─── Epic: foil illusion.png + cromado iridiscente + shimmer ─────────────────
+// illusion.png se desplaza con tilt; el cromado "corre" con time y los sparkles
+// brillan sobre las zonas más luminosas del foil.
 const EPIC_SKSL = `
   uniform shader foilTex;
   uniform vec2  tilt;
   uniform float intensity;
+  uniform float time;
   uniform vec2  resolution;
 
   vec3 hsl2rgb(float h, float s, float l) {
     vec3 rgb = clamp(abs(mod(h*6.0 + vec3(0,4,2), 6.0) - 3.0) - 1.0, 0.0, 1.0);
     return l + s * (rgb - 0.5) * (1.0 - abs(2.0*l - 1.0));
+  }
+
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
   }
 
   half4 main(vec2 fragCoord) {
@@ -122,8 +207,12 @@ const EPIC_SKSL = `
     vec3 foil = foilTex.eval(foilUV).rgb;
     float luma = dot(foil, vec3(0.299, 0.587, 0.114));
 
-    // Hue = posición + luma del foil + tilt → cromado iridiscente
-    float hue = fract(luma * 0.8 + uv.x * 0.3 + tilt.x * 0.5 - tilt.y * 0.3);
+    // Hue = posición + luma + tilt + time → cromado que "corre" continuamente
+    float hue = fract(
+      luma * 0.8 + uv.x * 0.3 + uv.y * 0.2
+      + tilt.x * 0.5 - tilt.y * 0.3
+      + time * 0.08
+    );
     float sat = mix(0.5, 1.0, intensity);
     vec3 chrome = hsl2rgb(hue, sat, mix(0.35, 0.65, luma));
 
@@ -131,18 +220,31 @@ const EPIC_SKSL = `
     float spec = smoothstep(0.6, 0.95, luma) * intensity;
     chrome += spec * vec3(1.0, 0.98, 0.92) * 0.4;
 
-    float alpha = (0.3 + luma * 0.3) * max(intensity, 0.2);
+    // Foil shimmer sparkles — twinkle sobre zonas luminosas
+    float cell1 = hash(floor(uv * 16.0));
+    float twinkle1 = sin(time * 3.0 + cell1 * 6.283) * 0.5 + 0.5;
+    float shimmer1 = pow(twinkle1, 6.0) * smoothstep(0.5, 0.9, luma);
+
+    float cell2 = hash(floor(uv * 32.0) + 100.0);
+    float twinkle2 = sin(time * 5.5 + cell2 * 6.283) * 0.5 + 0.5;
+    float shimmer2 = pow(twinkle2, 8.0) * smoothstep(0.65, 0.95, luma) * 0.6;
+
+    float totalShimmer = shimmer1 + shimmer2;
+    chrome += totalShimmer * vec3(1.0, 0.97, 0.9) * 0.8;
+
+    float alpha = (0.3 + luma * 0.3 + totalShimmer * 0.25) * max(intensity, 0.2);
     return half4(chrome * alpha, alpha);
   }
 `;
 
-// ─── Legendary: cosmos holo — galaxia + arcoíris 82° + glare ────────────────
+// ─── Legendary: cosmos holo — galaxia + arcoíris 82° + glare + star twinkle ──
 // cosmos-bottom.png se desplaza con pointer; las otras 2 capas van por Rect
 // separados con paralax propio (Skia RuntimeEffect: 1 solo child ImageShader).
 const COSMOS_SKSL = `
   uniform shader cosmosTex;
   uniform vec2  pointer;
   uniform float intensity;
+  uniform float time;
   uniform vec2  resolution;
 
   vec3 hsl2rgb(float h, float s, float l) {
@@ -153,6 +255,10 @@ const COSMOS_SKSL = `
   vec3 colorDodge(vec3 b, vec3 t) { return clamp(b / (1.0 - t + 0.001), 0.0, 1.0); }
   vec3 colorBurn (vec3 b, vec3 t) { return clamp(1.0 - (1.0 - b) / (t + 0.001), 0.0, 1.0); }
 
+  float hash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+  }
+
   half4 main(vec2 fragCoord) {
     vec2 uv = fragCoord / resolution;
 
@@ -160,25 +266,39 @@ const COSMOS_SKSL = `
     vec2 offset = (pointer - 0.5) * 0.25;
     vec3 cosmos = cosmosTex.eval(fragCoord + offset * resolution).rgb;
 
-    // Gradiente arcoíris a 82° — igual que pokemon-cards-css
+    // Gradiente arcoíris a 82° — se desplaza con time para que "corra" el holo
     float angle = 82.0 * 3.14159265 / 180.0;
     float t = fract(
       (uv.x * cos(angle) + uv.y * sin(angle)) * 5.0
       + (pointer.x - 0.5) * 0.8
       - (pointer.y - 0.5) * 0.5
+      + time * 0.12
     );
     vec3 rainbow = hsl2rgb(t, 1.0, 0.55);
 
     // Blend cosmos + rainbow
     vec3 result = mix(colorBurn(cosmos, rainbow), colorDodge(cosmos, rainbow), 0.5);
 
-    // Glare radial: linterna centrada en el pointer
+    // Glare radial: linterna centrada en el pointer, pulsa suavemente
+    float pulse = 1.0 + sin(time * 1.8) * 0.15;
     float dist = distance(uv, pointer);
-    result += vec3(0.85, 0.92, 1.0) * smoothstep(0.7, 0.0, dist) * intensity * 0.5;
+    result += vec3(0.85, 0.92, 1.0) * smoothstep(0.7, 0.0, dist) * intensity * 0.5 * pulse;
 
     // Halo en bordes al inclinar
     float edge = smoothstep(0.3, 0.0, min(min(uv.x, 1.0-uv.x), min(uv.y, 1.0-uv.y)));
     result += rainbow * edge * intensity * 0.3;
+
+    // Star twinkle — estrellas individuales que parpadean
+    float cell1 = hash(floor(uv * 20.0));
+    float twinkle1 = sin(time * 2.5 + cell1 * 6.283) * 0.5 + 0.5;
+    float star1 = pow(twinkle1, 10.0) * step(0.88, cell1);
+
+    float cell2 = hash(floor(uv * 40.0) + 100.0);
+    float twinkle2 = sin(time * 4.0 + cell2 * 6.283) * 0.5 + 0.5;
+    float star2 = pow(twinkle2, 12.0) * step(0.93, cell2) * 0.7;
+
+    float stars = star1 + star2;
+    result += stars * vec3(1.0, 0.98, 0.95) * 1.2;
 
     result = pow(clamp(result, 0.0, 1.0), vec3(0.85)) * 1.1;
 
@@ -207,7 +327,7 @@ export default function SkiaCard({
   // Descargá estas imágenes de:
   //   https://github.com/jerinjohnk/RNShaderCard/tree/main/assets
   // y ponerlas en assets/effects/
-  const grainImg = useImage(getLocalImage("rare/grain.webp"));
+  const glitterImg = useImage(getLocalImage("rare/glitter.png"));
   const illusionImg = useImage(getLocalImage("epic/illusion.png"));
   const cosmosBottomImg = useImage(
     getLocalImage("legendary/cosmos-bottom.png"),
@@ -264,13 +384,15 @@ export default function SkiaCard({
   // ── Rotación acumulada ─────────────────────────────────────────────────────
   const rotX = useSharedValue(0);
   const rotY = useSharedValue(0);
+  const time = useSharedValue(0);
 
   useFrameCallback((frameInfo) => {
     "worklet";
     const dt = (frameInfo.timeSincePreviousFrame ?? 16) / 1000;
+    time.value += dt;
     const { x, y } = sensor.sensor.value;
     const dz = 0.01;
-    if (Math.abs(y) > dz) {
+    if (Math.abs(x) > dz) {
       rotX.value = Math.max(
         -MAX_ROTATION,
         Math.min(MAX_ROTATION, rotX.value + x * dt),
@@ -278,7 +400,7 @@ export default function SkiaCard({
     } else {
       rotX.value *= 0.98;
     }
-    if (Math.abs(x) > dz) {
+    if (Math.abs(y) > dz) {
       rotY.value = Math.max(
         -MAX_ROTATION,
         Math.min(MAX_ROTATION, rotY.value + y * dt),
@@ -301,12 +423,19 @@ export default function SkiaCard({
     ]),
   );
 
-  const lightingUniforms = useDerivedValue(() => ({
-    lightPos: [0.5 + rotY.value * 0.9, 0.5 - rotX.value * 0.9],
-    lightColor: [1.0, 0.97, 0.88],
-    ambient: 0.06,
-    resolution: [CARD_W, CARD_H],
-  }));
+  const lightingUniforms = useDerivedValue(() => {
+    const cfg = LIGHTING_CONFIG[rarity] || LIGHTING_CONFIG.common;
+    return {
+      lightPos: [0.5 + rotY.value * 0.9, 0.5 - rotX.value * 0.9],
+      lightColor: cfg.lightColor,
+      ambient: cfg.ambient,
+      diffuseStrength: cfg.diffuseStrength,
+      specularStrength: cfg.specularStrength,
+      specularPower: cfg.specularPower,
+      saturation: cfg.saturation,
+      resolution: [CARD_W, CARD_H],
+    };
+  });
 
   // smoothstep para que el efecto aparezca gradualmente
   const smoothIntensity = useDerivedValue(() => {
@@ -330,18 +459,21 @@ export default function SkiaCard({
   const rareUniforms = useDerivedValue(() => ({
     tilt: tiltVec.value,
     intensity: smoothIntensity.value,
+    time: time.value,
     resolution: [CARD_W, CARD_H],
   }));
 
   const epicUniforms = useDerivedValue(() => ({
     tilt: tiltVec.value,
     intensity: smoothIntensity.value,
+    time: time.value,
     resolution: [CARD_W, CARD_H],
   }));
 
   const cosmosUniforms = useDerivedValue(() => ({
     pointer: pointerVec.value,
     intensity: smoothIntensity.value,
+    time: time.value,
     resolution: [CARD_W, CARD_H],
   }));
 
@@ -357,7 +489,14 @@ export default function SkiaCard({
   ]);
 
   // ── Font ───────────────────────────────────────────────────────────────────
-  const font = useFont(UncialAntiqua_400Regular, 20);
+  const gothicFont = useFont(UncialAntiqua_400Regular, 20);
+  const cyberFont = useFont(Orbitron_700Bold, 18);
+  const elegantFont = useFont(Cinzel_700Bold, 20);
+
+  const font = rarity === "common" ? gothicFont
+    : rarity === "legendary" ? elegantFont
+    : cyberFont;
+
   const textX = useDerivedValue(() =>
     !font ? CX : CX - font.getTextWidth(texto1) / 2,
   );
@@ -371,10 +510,19 @@ export default function SkiaCard({
   // ── Guards ─────────────────────────────────────────────────────────────────
   if (!lightingFx || !background || !center || !normal) return null;
 
+  const textColor = rarity === "legendary" ? "#ffffffff" : "#363636ff";
+
   return (
     <View style={styles.container}>
       <Canvas style={{ width: CANVAS_W, height: CANVAS_H }}>
-        <Group matrix={cardMatrix}>
+        <Group
+          matrix={cardMatrix}
+          clip={Skia.RRectXY(
+            Skia.XYWHRect(PADDING, PADDING, CARD_W, CARD_H),
+            16,
+            16,
+          )}
+        >
           {/* ── Capa 1: Fondo ───────────────────────────────────────────── */}
           <Image
             image={background}
@@ -403,21 +551,21 @@ export default function SkiaCard({
                 y={CARD_H * 0.85}
                 text={texto1}
                 font={font}
-                color="#363636ff"
+                color={textColor}
               />
               <Text
                 x={text2X}
                 y={CARD_H * 0.85 + 25}
                 text={texto2}
                 font={font}
-                color="#363636ff"
+                color={textColor}
               />
               <Text
                 x={text3X}
                 y={CARD_H * 0.85 + 25 + 25}
                 text={texto3}
                 font={font}
-                color="#363636ff"
+                color={textColor}
               />
             </>
           )}
@@ -445,8 +593,8 @@ export default function SkiaCard({
             </Shader>
           </Rect>
 
-          {/* ── Capa 5 RARE: grain.webp + rainbow ──────────────────────── */}
-          {rarity === "rare" && rareFx && grainImg && (
+          {/* ── Capa 5 RARE: glitter.png + rainbow sparkles ──────────────── */}
+          {rarity === "rare" && rareFx && glitterImg && (
             <Rect
               x={PADDING}
               y={PADDING}
@@ -456,7 +604,7 @@ export default function SkiaCard({
             >
               <Shader source={rareFx} uniforms={rareUniforms}>
                 <ImageShader
-                  image={grainImg}
+                  image={glitterImg}
                   fit="cover"
                   tx="repeat"
                   ty="repeat"

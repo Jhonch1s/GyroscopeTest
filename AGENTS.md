@@ -2,15 +2,18 @@
 
 ## What this is
 
-Expo SDK 55 app (React Native 0.83) — a card catalog with gyroscope-driven 3D viewer. Uses `@shopify/react-native-skia` for the card renderer with GLSL lighting shader, `react-native-reanimated` for gyroscope sensor data, and `expo-router` for file-based routing.
+Expo SDK 55 app (React Native 0.83, React 19.2) — a card catalog with gyroscope-driven 3D viewer, random card generation, and pack-opening mechanics. Uses `@shopify/react-native-skia` for the card renderer (with rarity-based GLSL shaders), `react-native-reanimated` for gyroscope sensor data, and `expo-router` for file-based routing.
 
 ## Stack
 
-- **Backend**: Supabase (`@supabase/supabase-js`) — auth and `perfil` table for users, `carta` table for cards
-- **Forms**: `react-hook-form` with `Controller` pattern
-- **Auth**: Email/password stored in `perfil.contrasena` (currently plain text — `bcryptjs` and `react-native-nitro-bcrypt` are installed but not yet wired to hashing)
-- **Sensors**: `expo-sensors` + reanimated's `useAnimatedSensor(SensorType.GYROSCOPE)` via `useGyroscope` hook
-- **Navigation**: Single `index.tsx` with `TabView` (4 tabs: Inicio, Catálogo, Visor 3D, Generador)
+- **Backend**: Supabase (`@supabase/supabase-js`) — tables: `perfil` (auth), `carta` (cards), `mision` (missions), `progreso_usuario` (mission completion)
+- **Auth**: Email/password gated in `index.tsx` via `userId` state. AuthScreen queries `perfil` directly comparing `email` + `contrasena` (plain text). Register inserts with plain text password. `bcryptjs` installed but unused in active flow (`react-native-nitro-bcrypt` was removed from deps — was unused and blocked Android build).
+- **Forms**: Raw `TextInput` + `Alert` in `AuthScreen` (active). `react-hook-form` with `Controller` in unused `LoginScreen`/`RegisterScreen` under `src/app/`.
+- **Sensors**: `useAnimatedSensor(SensorType.GYROSCOPE)` directly in `Skiacard.tsx` (not via `useGyroscope` hook).
+- **Navigation**: `react-native-tab-view` TabBar in `index.tsx` (3 tabs: Inicio, Catálogo, Generador). Tab bar at bottom. Card viewer renders as full-screen overlay when `selectedCardId` is set. Auth gate renders `AuthScreen` when `userId` is null.
+- **Fonts**: `@expo-google-fonts/uncial-antiqua` for card text in Skia
+- **Date picker**: `@react-native-community/datetimepicker` on register form
+- **AsyncStorage**: `@react-native-native-async-storage/async-storage` for Supabase auth session persistence
 
 ## Commands
 
@@ -30,59 +33,85 @@ No test suite configured.
 ```
 src/
   app/
-    index.tsx              ← TabView with 4 routes (Home, Catalog, CardViewer, CardGenerator)
-    LoginScreen.tsx        ← unused (AuthScreen used instead)
-    RegisterScreen.tsx
-  lib/
-    supabase.ts            ← Supabase client singleton
-  screens/
-    AuthScreen.tsx         ← login/register with date picker
-    CardViewerScreen.tsx   ← Skia-based 3D card renderer (gyroscope-driven)
-    CardGeneratorScreen.tsx ← random card generator for testing
-    CatalogScreen.tsx
-    Home.tsx
+    index.tsx           ← Auth gate + TabView (3 tabs: Home, Catalog, Generator)
+    LoginScreen.tsx     ← unused (react-hook-form, not rendered)
+    RegisterScreen.tsx  ← unused (react-hook-form + bcryptjs, not rendered)
   components/
-    Skiacard.tsx           ← 3-layer card: background + center image + normal map shader
+    Skiacard.tsx        ← Skia 3D card renderer (gyroscope rotation + rarity shaders)
+    PackOpenerModal.tsx ← modal for opening card packs (5 cards, flash animation)
+    styles/
+      PackOpenerModal.styles.ts
   hooks/
-    useGyroscope.ts        ← wraps useAnimatedSensor(SensorType.GYROSCOPE)
-  utils/
-    generateCard.ts        ← random card generation with rarity weights (40/20/20/20)
-    imageMapper.ts         ← asset key resolution for Skia useImage()
+    useGyroscope.ts     ← thin wrapper around useAnimatedSensor (not used by Skiacard)
+  lib/
+    supabase.ts         ← Supabase client singleton (URL + anon key hardcoded)
+  screens/
+    AuthScreen.tsx      ← login/register toggle with date picker (active auth UI)
+    CardGeneratorScreen.tsx ← random card generator using generateCardParts()
+    CardViewerScreen.tsx ← loads card from Supabase, renders Skiacard (full-screen overlay)
+    CatalogScreen.tsx   ← FlatList grid of user's cards from Supabase with realtime subscription
+    Home.tsx            ← profile header + daily missions → PackOpenerModal on completion
+    styles/
+      Home.styles.ts
+      CatalogScreen.styles.ts
+      CardViewerScreen.styles.ts
+      CardGeneratorScreen.styles.ts
   types/
-    index.ts               ← Carta, Perfil, Mision, CategoriaCarta types
+    index.ts            ← Carta, Perfil, Mision, ProgresoUsuario, CategoriaCarta, TipoMision
+  utils/
+    generateCard.ts     ← rolls rarity (weighted random), picks random assets from pools
+    imageMapper.ts      ← maps "{rarity}/{filename}" keys to local require(...) assets
 ```
 
 Entry point is `expo-router/entry`. Routing is file-based under `src/app/`.
 
-## Card Generator
+## Data flow
 
-- `generateCardParts()` in `src/utils/generateCard.ts` rolls rarity per part (background, center, normal)
-- Probabilities: Common 40%, Rare 20%, Epic 20%, Legendary 20%
-- All parts share the same rarity tier (background rarity determines center and normal rarity)
-- Falls back to `common` if a category has no assets for a given rarity
+1. **Auth**: `index.tsx` owns `userId` state. If null → renders `<AuthScreen>`. AuthScreen queries `perfil` by email+password (plain text), returns `Perfil` object via `onAuthSuccess(user)`.
+2. **Home**: Receives `userId`, fetches profile + missions via RPC `get_daily_missions`. Completing a mission updates `progreso_usuario` in Supabase and opens `PackOpenerModal`.
+3. **Pack opener**: `PackOpenerModal` generates 5 random cards via `generateCardParts()`, saves all 5 to `carta` table (with `propietario: userId`), then reveals them one by one.
+4. **Catalog**: `CatalogScreen` loads all `carta` rows where `propietario = userId`, subscribes to INSERT events on `carta` via Supabase realtime (`postgres_changes`).
+5. **Card viewer**: Selecting a card in Catalog sets `selectedCardId` in `index.tsx` → renders `CardViewerScreen` as full-screen overlay (replaces TabView) with a back button.
+6. **Generator**: `CardGeneratorScreen` generates single random cards via `generateCardParts()` → renders with `Skiacard` (no DB save). Passes `rarity` prop.
+7. **Card rendering**: `Skiacard` uses gyroscope for 3D rotation + lighting shader. Rarity layers:
+   - **common**: normal map lighting only (`NORMAL_SCALE: 0.2`)
+   - **rare**: glitter texture (`glitter.png`) + animated rainbow sparkles (3 layers twinkle)
+   - **epic**: illusion texture (`illusion.png`) + foil chrome shimmer (animated hue + sparkles)
+   - **legendary**: 3-layer cosmos (bottom/middle/top) with parallax + animated arcoíris drift + star twinkle + dimmer saturated lighting
 
-## Asset Structure
+## Assets structure
 
 ```
 assets/
-  common/   backgrounds/, images/, textures/
-  rare/     backgrounds/, images/, textures/
-  epic/     backgrounds/, images/, textures/
-  legendary/backgrounds/, images/, textures/
+  common/backgrounds/, images/, textures/
+  rare/backgrounds/, images/, textures/     ← grain.webp, glitter.png
+  epic/backgrounds/, images/, textures/     ← illusion.png, tex_01.png
+  legendary/backgrounds/, images/, textures/ ← cosmos-*.png
+  images/                                   ← buffkirk.jpg
+  sobre/                                    ← sobre.png (pack image)
+  expo.icon/Assets/                         ← app icon
 ```
 
-**Naming convention** (local numbers per folder):
-- `backgrounds/`: `bg_01.png`, `bg_02.png`, ...
-- `images/`: `img_01.jpg`, `img_02.png`, ...
-- `textures/`: `tex_01.jpg`, `tex_02.png`, ...
+Images resolved via `imageMapper.ts` using `require(...)` in `"{rarity}/{filename}"` format.
 
-**imageMapper keys**: `{rarity}/{filename}` (e.g., `common/bg_01.png`)
+## Rarity system (utils/generateCard.ts)
+
+| Rarity | Weight | Asset pools |
+|--------|--------|-------------|
+| common | 40 | 2 bg, 3 img, 1 tex |
+| rare | 20 | 1 bg, 1 img, 1 tex |
+| epic | 20 | 1 bg, 1 img, 1 tex |
+| legendary | 20 | 1 bg, 3 img, 1 tex |
+
+`rollRarity()` uses weighted random distribution. Each card rolls rarity once — background, center image, and texture all come from the same rarity pool.
 
 ## Key conventions
 
 - **Path alias**: `@/*` → `./src/*`
 - **React Compiler** enabled — do not add manual `memo()` or `useCallback`
 - **Typed routes** enabled (`app.json` experiments.typedRoutes)
+- **No `_layout.tsx`** — single screen with TabView, no navigation stack
+- **Styles are separated** in `src/screens/styles/` and `src/components/styles/` using `StyleSheet.create`
 
 ## Gotchas
 
@@ -90,5 +119,9 @@ assets/
 - `expo-env.d.ts` is gitignored and auto-generated — do not commit it
 - `scripts/reset-project.js` destructively moves `src/` to `example/` — never run unintentionally
 - Supabase URL and anon key are hardcoded in `src/lib/supabase.ts` — not env-variable driven
-- Auth stores passwords in plain text (`perfil.contrasena`) despite `bcryptjs` being installed
-- `epic/textures/` and `legendary/textures/` are empty — fallback to `common` textures
+- Auth stores passwords in plain text (`perfil.contrasena`) — `bcryptjs` installed but unused in active flow (`react-native-nitro-bcrypt` was removed from deps — was unused and blocked Android build)
+- `Skiacard.tsx` uses its own `useAnimatedSensor` directly, not the `useGyroscope` hook in `src/hooks/`
+- Skia shaders (`LIGHTING_SKSL`, `RARE_SKSL`, `EPIC_SKSL`, `COSMOS_SKSL`) are inline strings — changes require Metro rebuild
+- `CardViewerScreen` does NOT pass `rarity` prop to `<Skiacard>` (uses default `"common"`) — card viewer always shows common-level lighting regardless of actual card rarity
+- `imageMapper.ts` uses `"{rarity}/{filename}"` keys with `endsWith` fallback for legacy DB entries
+- `generateCard.ts` references asset files (`bg_01.png`, `img_01.jpg`, etc.) that must exist in the corresponding `assets/{rarity}/{category}/` directories

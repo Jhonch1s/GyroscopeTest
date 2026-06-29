@@ -1,8 +1,15 @@
 import AuthScreen from "@/screens/AuthScreen";
 import CardGeneratorScreen from "@/screens/CardGeneratorScreen";
+import DontTouchScreen from "@/screens/misiones/DontTouchScreen";
+import ReadingMissionScreen from "@/screens/misiones/ReadingMissionScreen";
+import TriviaMissionScreen from "@/screens/misiones/TriviaMissionScreen";
+import { createDrawerNavigator } from '@react-navigation/drawer';
+import { useRoute } from '@react-navigation/native';
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import * as React from "react";
 import {
   ActivityIndicator,
+  LogBox,
   StyleSheet,
   Text,
   View,
@@ -14,35 +21,49 @@ import CardViewerScreen from "../screens/CardViewerScreen";
 import CatalogScreen from "../screens/CatalogScreen";
 import Home from "../screens/Home";
 
-export default function App() {
+export type RootStackParamList = {
+  Auth: undefined;
+  MainTabs?: { showPack?: boolean };  // ahora acepta params
+  DontTouch: { userId: number; missionId: number };
+  ReadingMission: { userId: number; missionId: number };
+  TriviaMission: { userId: number; missionId: number };
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
+
+const Drawer = createDrawerNavigator();
+
+
+ function MainTabs({ userId, onLogout }: { userId: number, onLogout: () => void }) {
+
+  LogBox.ignoreLogs(["Can't perform a React state update on a component that hasn't mounted yet"]);
   const layout = useWindowDimensions();
   const [index, setIndex] = React.useState(0);
   const [selectedCardId, setSelectedCardId] = React.useState<
     number | undefined
   >();
   const insets = useSafeAreaInsets();
-  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
+  const route = useRoute();
+  const params = route.params as { showPack?: boolean } | undefined;
+  const showPack = params?.showPack ?? false;
+  
 
   const routes = [
     { key: "home", title: "Inicio" },
     { key: "catalog", title: "Catálogo" },
-    { key: "viewer", title: "Visor 3D" },
     { key: "cardGenerator", title: "Generador" },
   ];
 
   const handleCardSelect = (cardId: number) => {
     setSelectedCardId(cardId);
-    setIndex(2); // Cambiar a la pestaña de Visor 3D
   };
 
   const renderScene = ({ route }: any) => {
     switch (route.key) {
       case "home":
-        return <Home />;
+        return <Home userId={userId!} onLogout={onLogout} />;
       case "catalog":
-        return <CatalogScreen onCardSelect={handleCardSelect} />;
-      case "viewer":
-        return <CardViewerScreen cardId={selectedCardId} />;
+        return <CatalogScreen userId={userId!} onCardSelect={handleCardSelect} />;
       case "cardGenerator":
         return <CardGeneratorScreen />;
       default:
@@ -75,10 +96,6 @@ export default function App() {
     </View>
   );
 
-  if (!isAuthenticated) {
-    return <AuthScreen onAuthSuccess={() => setIsAuthenticated(true)} />;
-  }
-
   return (
     <View
       style={[
@@ -86,17 +103,50 @@ export default function App() {
         { paddingBottom: insets.bottom, paddingTop: insets.top },
       ]}
     >
-      <TabView
-        navigationState={{ index, routes }}
-        renderScene={renderScene}
-        renderTabBar={renderTabBar}
-        onIndexChange={setIndex}
-        initialLayout={{ width: layout.width }}
-        tabBarPosition="bottom"
-        lazy
-        renderLazyPlaceholder={renderLazyPlaceholder}
-      />
+      {selectedCardId ? (
+        <CardViewerScreen 
+          cardId={selectedCardId} 
+          onClose={() => setSelectedCardId(undefined)} 
+        />
+      ) : (
+        <TabView
+          navigationState={{ index, routes }}
+          renderScene={renderScene}
+          renderTabBar={renderTabBar}
+          onIndexChange={setIndex}
+          initialLayout={{ width: layout.width }}
+          tabBarPosition="bottom"
+          lazy
+          renderLazyPlaceholder={renderLazyPlaceholder}
+        />
+      )}
     </View>
+  );
+}
+
+export default function App() {
+  const [userId, setUserId] = React.useState<number | null>(null);
+
+  // Si no hay userId, mostramos AuthScreen, pero dentro del Stack
+  // para mantener la navegación consistente.
+  return (
+    
+      <Drawer.Navigator screenOptions={{ headerShown: false }}>
+        {!userId ? (
+          <Drawer.Screen name="Auth">
+            {() => <AuthScreen onAuthSuccess={(user) => setUserId(user.id)} />}
+          </Drawer.Screen>
+        ) : (
+          <>
+            <Drawer.Screen name="MainTabs">
+              {() => <MainTabs userId={userId} onLogout={() => setUserId(null)} />}
+            </Drawer.Screen>
+            <Drawer.Screen name="DontTouch" component={DontTouchScreen} />
+            <Drawer.Screen name="ReadingMission" component={ReadingMissionScreen} />
+            <Drawer.Screen name="TriviaMission" component={TriviaMissionScreen} />
+          </>
+        )}
+      </Drawer.Navigator>
   );
 }
 
