@@ -2,6 +2,7 @@ import AuthScreen from "@/screens/AuthScreen";
 import CardGeneratorScreen from "@/screens/CardGeneratorScreen";
 import DontTouchScreen from "@/screens/misiones/DontTouchScreen";
 import { createDrawerNavigator } from '@react-navigation/drawer';
+import { useRoute } from '@react-navigation/native';
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import * as React from "react";
 import {
@@ -20,8 +21,8 @@ import Home from "../screens/Home";
 
 export type RootStackParamList = {
   Auth: undefined;
-  MainTabs: undefined;
-  DontTouch: undefined;
+  MainTabs?: { showPack?: boolean };  // ahora acepta params
+  DontTouch: { userId: number; missionId: number };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -38,6 +39,10 @@ const Drawer = createDrawerNavigator();
     number | undefined
   >();
   const insets = useSafeAreaInsets();
+  const route = useRoute();
+  const params = route.params as { showPack?: boolean } | undefined;
+  const showPack = params?.showPack ?? false;
+  
 
   const routes = [
     { key: "home", title: "Inicio" },

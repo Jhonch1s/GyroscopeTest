@@ -182,9 +182,6 @@ export default function Home({ userId }: Props) {
               </View>
             ))
           )}
-          <TouchableOpacity onPress={() => navigation.navigate('DontTouch')}>
-            <Text style={styles.claimButtonText}>Countdown</Text>
-          </TouchableOpacity>
         </View>
       </View>
 
