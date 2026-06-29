@@ -1,5 +1,5 @@
-import { useNavigation } from "@react-navigation/native";
-import React, { useEffect, useState, } from "react";
+import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
+import React, { useCallback, useEffect, useState } from "react";
 
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
@@ -15,11 +15,11 @@ import PackOpenerModal from "../components/PackOpenerModal";
 import { supabase } from "../lib/supabase";
 import { Mision, Perfil } from "../types";
 import { getLocalImage } from "../utils/imageMapper";
-import DontTouchScreen from "./misiones/DontTouchScreen";
 import { styles } from "./styles/Home.styles";
 
 interface Props {
   userId: number;
+  showPackFromRoute?: boolean;
 }
 
 
@@ -29,6 +29,7 @@ export default function Home({ userId }: Props) {
   const [perfil, setPerfil] = useState<Perfil | null>(null);
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute();
   
   const [showPackModal, setShowPackModal] = useState(false);
 
@@ -73,6 +74,11 @@ export default function Home({ userId }: Props) {
   };
 
   const completeActivity = async (id: number) => {
+
+     if (id === 31) {
+      navigation.navigate('DontTouch', { userId, missionId: id });
+      return; // Salir sin completar
+    }
     // Abrir el modal de sobres
     setShowPackModal(true);
 
@@ -94,9 +100,19 @@ export default function Home({ userId }: Props) {
     }
   };
 
-  const goToCountdown = () => {
-    return ( <DontTouchScreen></DontTouchScreen>)
-  }
+   useFocusEffect(
+    useCallback(() => {
+      const params = route.params as { showPack?: boolean } | undefined;
+      if (params?.showPack) {
+        setShowPackModal(true);
+        // Limpiar el parámetro para que no se repita al volver a enfocar
+        navigation.setParams({ showPack: undefined });
+        // Refrescar la lista de misiones (ya que la 31 se completó)
+        fetchData();
+      }
+    }, [navigation, route.params])
+  );
+
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
