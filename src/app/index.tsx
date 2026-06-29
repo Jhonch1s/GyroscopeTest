@@ -20,8 +20,8 @@ import Home from "../screens/Home";
 
 export type RootStackParamList = {
   Auth: undefined;
-  MainTabs: undefined;
-  DontTouch: undefined;
+  MainTabs?: { showPack?: boolean };  // ahora acepta params
+  DontTouch: { userId: number; missionId: number };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();

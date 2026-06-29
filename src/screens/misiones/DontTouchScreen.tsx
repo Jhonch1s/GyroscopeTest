@@ -1,5 +1,6 @@
 import { RootStackParamList } from "@/app";
-import { useNavigation } from "@react-navigation/native";
+import { supabase } from "@/lib/supabase";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import React, { useEffect, useState, } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -20,11 +21,14 @@ export default function DontTouchScreen() {
   const sensor = useAnimatedSensor(SensorType.GYROSCOPE, { interval: 100 });
   const { x, y } = sensor.sensor.value;
   const texto = "esta es la pantalla donde esta el cronometro";
-  const [timerCount, setTimer] = useState(60)
+  const [timerCount, setTimer] = useState(60);
+  const [completed, setCompleted] = useState(false);
   const [movido, setMovido] = useState(false);
   const [volverHome, setVolverHome] = useState(false);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute();
+  const { userId, missionId } = route.params as { userId: number; missionId: number };
 
   const isMoving = useDerivedValue(() => {
     const { x, y, z } = sensor.sensor.value;
@@ -60,34 +64,52 @@ export default function DontTouchScreen() {
 
   useEffect(() => {
     if (timerCount === 0) {
-      setVolverHome(true);
+      handleTimerEnd();
       return;
     }
 
-    setTimer(60);
+
+     if (timerCount < 0) return;
 
     const interval = setInterval(() => {
-      setTimer((prev) => {
-        if (prev === 1) {
-          setVolverHome(true);
-          return 0;
-        }
-        
-        if (prev <= 0) {
-          return 0;
-        }
-        
-        return prev - 1;
-      });
-    }, 1000)
-    return () => clearInterval(interval)
-  }, []);
+      setTimer(prev => prev - 1);
+    }, 1000);
 
-  useEffect(() => {
+    return () => clearInterval(interval);
+  }, [timerCount]);
+
+   useEffect(() => {
     if (isMoving.value) {
       setTimer(60);
     }
   }, [isMoving.value]);
+
+  const handleTimerEnd = async () => {
+    if (completed) return; // Ya se completó
+    setCompleted(true);
+
+    // 1. Actualizar la base de datos
+    if (userId && missionId) {
+      const { error } = await supabase
+        .from('progreso_usuario')
+        .update({ completado: true })
+        .eq('perfil_id', userId)
+        .eq('mision_id', missionId)
+        .eq('fecha', new Date().toISOString().split('T')[0]);
+
+      if (error) {
+        console.error("Error al completar misión 31:", error);
+        
+        setCompleted(false); 
+        return;
+      }
+    }
+
+    navigation.navigate('MainTabs', { showPack: true },
+    );
+    };
+
+ 
 
   useEffect(() => {
   if (volverHome) {
@@ -136,6 +158,7 @@ export default function DontTouchScreen() {
           }} style={styles.botonContainer}>
             <Text style={styles.boton}>Regresar</Text>
           </TouchableOpacity>
+
       </View>
     </View>
 
