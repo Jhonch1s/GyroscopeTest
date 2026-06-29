@@ -9,6 +9,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  TextInput,
 } from "react-native";
 import { RootStackParamList } from "../app/index";
 import PackOpenerModal from "../components/PackOpenerModal";
@@ -17,14 +18,17 @@ import { Mision, Perfil } from "../types";
 import { getLocalImage } from "../utils/imageMapper";
 import { styles } from "./styles/Home.styles";
 
+import * as ImagePicker from "expo-image-picker";
+
 interface Props {
   userId: number;
   showPackFromRoute?: boolean;
+  onLogout?: () => void;
 }
 
 
 
-export default function Home({ userId }: Props) {
+export default function Home({ userId, onLogout }: Props) {
   const [misiones, setMisiones] = useState<Mision[]>([]);
   const [perfil, setPerfil] = useState<Perfil | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,6 +36,57 @@ export default function Home({ userId }: Props) {
   const route = useRoute();
   
   const [showPackModal, setShowPackModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editNombre, setEditNombre] = useState("");
+  const [editFoto, setEditFoto] = useState<string | null>(null);
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  const openEditModal = () => {
+    if (perfil) {
+      setEditNombre(perfil.nombre);
+      setEditFoto(perfil.imagen_perfil);
+    }
+    setShowEditModal(true);
+  };
+
+  const handlePickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+      base64: true,
+    });
+
+    if (!result.canceled && result.assets[0].base64) {
+      setEditFoto(`data:image/jpeg;base64,${result.assets[0].base64}`);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!perfil) return;
+    setSavingProfile(true);
+    try {
+      const updates = {
+        nombre: editNombre,
+        imagen_perfil: editFoto,
+      };
+
+      const { error } = await supabase
+        .from("perfil")
+        .update(updates)
+        .eq("id", userId);
+
+      if (error) throw error;
+      
+      setPerfil({ ...perfil, ...updates });
+      setShowEditModal(false);
+    } catch (error) {
+      console.error("Error al actualizar el perfil:", error);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -75,9 +130,19 @@ export default function Home({ userId }: Props) {
 
   const completeActivity = async (id: number) => {
 
-     if (id === 31) {
+     if (id === 1 || id === 5) {
       navigation.navigate('DontTouch', { userId, missionId: id });
-      return; // Salir sin completar
+      return;
+    }
+    
+    if (id === 2 || id === 6) {
+      navigation.navigate('ReadingMission', { userId, missionId: id });
+      return;
+    }
+
+    if (id === 7) {
+      navigation.navigate('TriviaMission', { userId, missionId: id });
+      return;
     }
     // Abrir el modal de sobres
     setShowPackModal(true);
@@ -162,12 +227,26 @@ export default function Home({ userId }: Props) {
     >
       <View style={styles.header}>
         <View style={styles.profileInfo}>
-          <Image source={getLocalImage("buffkirk.jpg")} style={styles.avatar} />
+          <TouchableOpacity onPress={openEditModal}>
+            {perfil?.imagen_perfil ? (
+              <Image source={{ uri: perfil.imagen_perfil }} style={styles.avatar} />
+            ) : (
+              <Image source={getLocalImage("buffkirk.jpg")} style={styles.avatar} />
+            )}
+            <View style={{ position: 'absolute', bottom: -5, right: -5, backgroundColor: '#3498db', borderRadius: 12, padding: 4 }}>
+              <Text style={{ fontSize: 10 }}>✏️</Text>
+            </View>
+          </TouchableOpacity>
           <View>
             <Text style={styles.greeting}>Hola,</Text>
             <Text style={styles.username}>{perfil?.nombre || "Usuario"}</Text>
           </View>
         </View>
+        {onLogout && (
+          <TouchableOpacity style={{ backgroundColor: '#e74c3c', padding: 8, borderRadius: 8 }} onPress={onLogout}>
+            <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>Salir</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.section}>
@@ -193,7 +272,9 @@ export default function Home({ userId }: Props) {
                   style={[styles.claimButton, { backgroundColor: "#3498db" }]}
                   onPress={() => completeActivity(mision.id)}
                 >
-                  <Text style={styles.claimButtonText}>Completar</Text>
+                  <Text style={styles.claimButtonText}>
+                    {[1, 2, 5, 6, 7].includes(mision.id) ? 'Hacer' : 'Completar'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             ))
@@ -207,6 +288,42 @@ export default function Home({ userId }: Props) {
         onClose={() => setShowPackModal(false)} 
         perfilId={userId} 
       />
+
+      {/* Modal de Editar Perfil */}
+      {showEditModal && (
+        <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', zIndex: 999 }}>
+          <View style={{ backgroundColor: '#1a1a20', padding: 20, borderRadius: 12, width: '80%' }}>
+            <Text style={{ color: 'white', fontSize: 18, fontWeight: 'bold', marginBottom: 15, textAlign: 'center' }}>Editar Perfil</Text>
+            
+            <TouchableOpacity onPress={handlePickImage} style={{ alignSelf: 'center', marginBottom: 15 }}>
+              {editFoto ? (
+                <Image source={{ uri: editFoto }} style={{ width: 80, height: 80, borderRadius: 40 }} />
+              ) : (
+                <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#333', justifyContent: 'center', alignItems: 'center' }}>
+                  <Text style={{ color: '#fff' }}>Foto</Text>
+                </View>
+              )}
+              <Text style={{ color: '#3498db', marginTop: 5, textAlign: 'center' }}>Cambiar</Text>
+            </TouchableOpacity>
+
+            <Text style={{ color: '#aaa', marginBottom: 5 }}>Nombre</Text>
+            <TextInput 
+              value={editNombre}
+              onChangeText={setEditNombre}
+              style={{ backgroundColor: '#0f0f13', color: 'white', padding: 10, borderRadius: 8, marginBottom: 20 }}
+            />
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <TouchableOpacity onPress={() => setShowEditModal(false)} style={{ padding: 10 }}>
+                <Text style={{ color: '#aaa' }}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleSaveProfile} style={{ backgroundColor: '#3498db', padding: 10, borderRadius: 8 }}>
+                {savingProfile ? <ActivityIndicator size="small" color="#fff" /> : <Text style={{ color: 'white' }}>Guardar</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
     </ScrollView>
   );
 }

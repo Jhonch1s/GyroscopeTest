@@ -1,6 +1,8 @@
 import AuthScreen from "@/screens/AuthScreen";
 import CardGeneratorScreen from "@/screens/CardGeneratorScreen";
 import DontTouchScreen from "@/screens/misiones/DontTouchScreen";
+import ReadingMissionScreen from "@/screens/misiones/ReadingMissionScreen";
+import TriviaMissionScreen from "@/screens/misiones/TriviaMissionScreen";
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { useRoute } from '@react-navigation/native';
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -23,6 +25,8 @@ export type RootStackParamList = {
   Auth: undefined;
   MainTabs?: { showPack?: boolean };  // ahora acepta params
   DontTouch: { userId: number; missionId: number };
+  ReadingMission: { userId: number; missionId: number };
+  TriviaMission: { userId: number; missionId: number };
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -30,7 +34,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 const Drawer = createDrawerNavigator();
 
 
- function MainTabs({ userId }: { userId: number }) {
+ function MainTabs({ userId, onLogout }: { userId: number, onLogout: () => void }) {
 
   LogBox.ignoreLogs(["Can't perform a React state update on a component that hasn't mounted yet"]);
   const layout = useWindowDimensions();
@@ -57,7 +61,7 @@ const Drawer = createDrawerNavigator();
   const renderScene = ({ route }: any) => {
     switch (route.key) {
       case "home":
-        return <Home userId={userId!} />;
+        return <Home userId={userId!} onLogout={onLogout} />;
       case "catalog":
         return <CatalogScreen userId={userId!} onCardSelect={handleCardSelect} />;
       case "cardGenerator":
@@ -135,9 +139,11 @@ export default function App() {
         ) : (
           <>
             <Drawer.Screen name="MainTabs">
-              {() => <MainTabs userId={userId} />}
+              {() => <MainTabs userId={userId} onLogout={() => setUserId(null)} />}
             </Drawer.Screen>
             <Drawer.Screen name="DontTouch" component={DontTouchScreen} />
+            <Drawer.Screen name="ReadingMission" component={ReadingMissionScreen} />
+            <Drawer.Screen name="TriviaMission" component={TriviaMissionScreen} />
           </>
         )}
       </Drawer.Navigator>

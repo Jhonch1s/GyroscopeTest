@@ -7,6 +7,7 @@ export interface Perfil {
   email: string | null;
   contrasena: string | null;
   f_nac: string | null;
+  imagen_perfil: string | null;
   creado_en: string;
 }
 

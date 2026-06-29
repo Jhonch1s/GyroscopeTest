@@ -59,8 +59,6 @@ export default function PackOpenerModal({
   const revealOpacity = useRef(new Animated.Value(0)).current;
   const revealScale = useRef(new Animated.Value(0.85)).current;
 
-  const soundRef = useRef<Audio.Sound | null>(null);
-
   useEffect(() => {
     if (isVisible) {
       setStep("idle");
@@ -69,38 +67,25 @@ export default function PackOpenerModal({
       flashAnim.setValue(0);
       revealOpacity.setValue(0);
       revealScale.setValue(0.85);
-    } else {
-      unloadSound();
     }
-    return () => {
-      unloadSound();
-    };
   }, [isVisible]);
-
-  const unloadSound = async () => {
-    if (soundRef.current) {
-      try {
-        await soundRef.current.unloadAsync();
-      } catch {}
-      soundRef.current = null;
-    }
-  };
 
   const playSound = async (rarity?: Rarity) => {
     try {
-      await unloadSound();
       await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
-
       let source: any;
       if (rarity === "epic" || rarity === "legendary") {
         source = require("../../assets/sounds/rare-reveal.wav");
       } else {
         source = require("../../assets/sounds/card-reveal.wav");
       }
-
       const { sound } = await Audio.Sound.createAsync(source, { volume: 0.7 });
-      soundRef.current = sound;
       await sound.playAsync();
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if ('didJustFinish' in status && status.didJustFinish) {
+          sound.unloadAsync();
+        }
+      });
     } catch {
       // Archivo de sonido no encontrado — ignorar silenciosamente
     }
@@ -108,14 +93,17 @@ export default function PackOpenerModal({
 
   const playPackSound = async () => {
     try {
-      await unloadSound();
       await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
       const { sound } = await Audio.Sound.createAsync(
         require("../../assets/sounds/pack-open.wav"),
         { volume: 0.8 }
       );
-      soundRef.current = sound;
       await sound.playAsync();
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if ('didJustFinish' in status && status.didJustFinish) {
+          sound.unloadAsync();
+        }
+      });
     } catch {}
   };
 

@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Text, TouchableOpacity, View, FlatList, ScrollView } from 'react-native';
+import React, { useEffect, useState, useCallback } from 'react';
+import { ActivityIndicator, Image, Text, TouchableOpacity, View, FlatList, ScrollView, RefreshControl } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { Carta } from '../types';
 import { getLocalImage } from '../utils/imageMapper';
@@ -31,10 +32,16 @@ function getRarityColor(rarity: string): string {
 export default function CatalogScreen({ userId, onCardSelect }: Props) {
   const [cartas, setCartas] = useState<Carta[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchCatalog();
+    }, [userId])
+  );
+
   useEffect(() => {
-    fetchCatalog();
 
     const subscription = supabase
       .channel('custom-insert-channel')
@@ -64,8 +71,14 @@ export default function CatalogScreen({ userId, onCardSelect }: Props) {
       console.error("Error cargando el catálogo:", error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchCatalog();
+  }, [userId]);
 
   const rarityCounts = cartas.reduce<Record<string, number>>((acc, c) => {
     const key = c.categoria || 'Comun';
@@ -189,10 +202,20 @@ export default function CatalogScreen({ userId, onCardSelect }: Props) {
 
   if (cartas.length === 0) {
     return (
-      <View style={styles.safe}>
+      <ScrollView 
+        style={styles.safe}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#3498db']}
+            tintColor="#3498db"
+          />
+        }
+      >
         {renderHeader()}
         {renderEmpty()}
-      </View>
+      </ScrollView>
     );
   }
 
@@ -207,6 +230,14 @@ export default function CatalogScreen({ userId, onCardSelect }: Props) {
         columnWrapperStyle={{ justifyContent: 'space-between', marginBottom: 16 }}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderFilteredEmpty}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#3498db']}
+            tintColor="#3498db"
+          />
+        }
       />
     </View>
   );

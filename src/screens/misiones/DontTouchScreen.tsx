@@ -21,14 +21,16 @@ export default function DontTouchScreen() {
   const sensor = useAnimatedSensor(SensorType.GYROSCOPE, { interval: 100 });
   const { x, y } = sensor.sensor.value;
   const texto = "esta es la pantalla donde esta el cronometro";
-  const [timerCount, setTimer] = useState(60);
+  const route = useRoute();
+  const { userId, missionId } = route.params as { userId: number; missionId: number };
+  
+  const initialTime = missionId === 5 ? 600 : 60;
+  const [timerCount, setTimer] = useState(initialTime);
   const [completed, setCompleted] = useState(false);
   const [movido, setMovido] = useState(false);
   const [volverHome, setVolverHome] = useState(false);
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const route = useRoute();
-  const { userId, missionId } = route.params as { userId: number; missionId: number };
 
   const isMoving = useDerivedValue(() => {
     const { x, y, z } = sensor.sensor.value;
@@ -80,7 +82,7 @@ export default function DontTouchScreen() {
 
    useEffect(() => {
     if (isMoving.value) {
-      setTimer(60);
+      setTimer(initialTime);
     }
   }, [isMoving.value]);
 
@@ -120,7 +122,7 @@ export default function DontTouchScreen() {
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('blur', () => {
-      setTimer(60);            
+      setTimer(initialTime);            
       setVolverHome(false);    
     });
 
@@ -153,7 +155,7 @@ export default function DontTouchScreen() {
 
       <View>
           <TouchableOpacity onPress={() => {
-            setTimer(60);
+            setTimer(initialTime);
             navigation.navigate('MainTabs')
           }} style={styles.botonContainer}>
             <Text style={styles.boton}>Regresar</Text>
