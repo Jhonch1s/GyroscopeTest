@@ -12,7 +12,7 @@ const imageMap: Record<string, any> = {
   "rare/img_01.png": require("../../assets/rare/images/img_01.png"),
   "rare/img_02.png": require("../../assets/rare/images/img_02.png"),
   "rare/img_03.png": require("../../assets/rare/images/img_03.png"),
-  "rare/tex_01.jpg": require("../../assets/rare/textures/tex_01.jpg"),
+  "rare/tex_01.png": require("../../assets/rare/textures/tex_01.png"),
   "rare/grain.webp": require("../../assets/rare/textures/grain.webp"),
   "rare/glitter.png": require("../../assets/rare/textures/glitter.png"),
   "epic/bg_01.png": require("../../assets/epic/backgrounds/bg_01.png"),
