@@ -35,7 +35,7 @@ const MAX_ROTATION = 0.35;
 
 const NORMAL_SCALE: Record<Rarity, number> = {
   common: 0.2,
-  rare: 3.0,
+  rare: 0.2,
   epic: 1.5,
   legendary: 1.0,
 };
@@ -273,7 +273,7 @@ export default function SkiaCard({
     if (Math.abs(y) > dz) {
       rotX.value = Math.max(
         -MAX_ROTATION,
-        Math.min(MAX_ROTATION, rotX.value + y * dt),
+        Math.min(MAX_ROTATION, rotX.value + x * dt),
       );
     } else {
       rotX.value *= 0.98;
@@ -281,7 +281,7 @@ export default function SkiaCard({
     if (Math.abs(x) > dz) {
       rotY.value = Math.max(
         -MAX_ROTATION,
-        Math.min(MAX_ROTATION, rotY.value + x * dt),
+        Math.min(MAX_ROTATION, rotY.value + y * dt),
       );
     } else {
       rotY.value *= 0.98;

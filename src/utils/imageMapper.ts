@@ -6,7 +6,7 @@ const imageMap: Record<string, any> = {
   "common/tex_01.jpg": require("../../assets/common/textures/tex_01.jpg"),
   "rare/bg_01.png": require("../../assets/rare/backgrounds/bg_01.png"),
   "rare/img_01.jpg": require("../../assets/rare/images/img_01.jpg"),
-  "rare/tex_01.jpg": require("../../assets/rare/textures/tex_01.jpg"),
+  "rare/tex_01.png": require("../../assets/rare/textures/tex_01.png"),
   "rare/grain.webp": require("../../assets/rare/textures/grain.webp"),
   "rare/glitter.png": require("../../assets/rare/textures/glitter.png"),
   "epic/bg_01.png": require("../../assets/epic/backgrounds/bg_01.png"),
