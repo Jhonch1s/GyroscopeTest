@@ -1,56 +1,70 @@
-# Welcome to your Expo app 👋
+# GyroscopeTest - 3D Card Collection App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Una aplicación móvil interactiva construida con **React Native (Expo)** donde los usuarios completan misiones diarias para obtener sobres de cartas. Las cartas cuentan con un visor 3D avanzado impulsado por **Skia** y el giroscopio del dispositivo (usando **Reanimated**), aplicando distintos efectos visuales (holográficos, brillos, arcoíris) dependiendo de la rareza de la carta.
 
-## Get started
+## Tecnologías Principales
 
-1. Install dependencies
+*   **Frontend:** React Native, Expo (SDK 55), Expo Router
+*   **Animaciones y Gráficos:** `@shopify/react-native-skia`, `react-native-reanimated`
+*   **Backend & Base de Datos:** Supabase (Autenticación y PostgreSQL)
+*   **Estilos:** Vanilla StyleSheet
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Start the app
+## Requisitos Previos
 
-   ```bash
-   npx expo start
-   ```
+Antes de comenzar, asegúrate de tener instalado en tu computadora:
 
-In the output, you'll find options to open the app in a
+1.  **[Node.js](https://nodejs.org/es/)** (Versión 18 o 20 LTS recomendada).
+2.  **[Git](https://git-scm.com/)** para clonar el repositorio.
+3.  Una cuenta gratuita en **[Supabase](https://supabase.com/)** para la base de datos.
+4.  La aplicación **Expo Go** instalada en tu teléfono ([Android](https://play.google.com/store/apps/details?id=host.exp.exponent) o [iOS](https://apps.apple.com/us/app/expo-go/id982107779)), o un Emulador de Android / Simulador de iOS en tu PC.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+---
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## ⚙️ Guía de Instalación Local
 
-## Get a fresh project
-
-When you're ready, run:
-
+### 1. Clonar el repositorio
+Abre tu terminal y ejecuta:
 ```bash
-npm run reset-project
+git clone https://github.com/Jhonch1s/GyroscopeTest
+cd GyroscopeTest
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 2. Instalar las dependencias
+Instala todos los paquetes necesarios de Node.js:
+```bash
+npm install
+```
 
-### Other setup steps
+### 3. Configurar la Base de Datos (Supabase)
+Esta aplicación requiere de una base de datos para funcionar (guardar usuarios, cartas y misiones).
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+1. Crea un nuevo proyecto en [Supabase](https://supabase.com/).
+2. Ve a la sección **SQL Editor** en el panel de Supabase.
+3. Abre el archivo `supabase_seed.sql` que se encuentra en la raíz de este proyecto.
+4. Copia todo el contenido del archivo, pégalo en el SQL Editor de Supabase y presiona **Run**. (Esto creará todas las tablas, configurará la seguridad RLS e insertará los datos y misiones iniciales).
+5. Desactiva la opcion **Enable Row Level Security (RLS)** en la tabla **Perfil** para que quede en estado **UNRESTRICTED**
 
-## Learn more
+### 4. Vincular la App con tu Base de Datos
+Debes conectar el código con tu nuevo proyecto de Supabase.
 
-To learn more about developing your project with Expo, look at the following resources:
+1. En Supabase, ve a **Project Settings > API**.
+2. Copia tu `Project URL` y tu `anon public key`.
+3. En el código del proyecto, ve al archivo `src/lib/supabase.ts`.
+4. Reemplaza los valores de `supabaseUrl` y `supabaseAnonKey` con los tuyos:
+   ```typescript
+   const supabaseUrl = 'TU_PROJECT_URL_AQUI';
+   const supabaseAnonKey = 'TU_ANON_KEY_AQUI';
+   ```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+### 5. Ejecutar la Aplicación
+Inicia el servidor de desarrollo de Expo:
+```bash
+npx expo start
+```
+*(Opcional: puedes usar `npm start`)*
 
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+**Para ver la app:**
+*   **Teléfono físico (Recomendado):** Abre la app **Expo Go** en tu celular y escanea el código QR que aparece en la terminal. *(Nota: El teléfono y la PC deben estar en la misma red Wi-Fi).*
+*   **Emulador:** Presiona la tecla `a` en la terminal para abrirlo en un emulador de Android, o la tecla `i` para el simulador de iOS.
