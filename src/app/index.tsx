@@ -1,6 +1,7 @@
 import AuthScreen from "@/screens/AuthScreen";
 import CardGeneratorScreen from "@/screens/CardGeneratorScreen";
 import DontTouchScreen from "@/screens/misiones/DontTouchScreen";
+import MisionSquatsPantalla from "@/screens/misiones/MisionSquatsPantalla";
 import ReadingMissionScreen from "@/screens/misiones/ReadingMissionScreen";
 import TriviaMissionScreen from "@/screens/misiones/TriviaMissionScreen";
 import { createDrawerNavigator } from '@react-navigation/drawer';
@@ -37,6 +38,7 @@ export type RootStackParamList = {
   Auth: undefined;
   MainTabs?: { showPack?: boolean };  // ahora acepta params
   DontTouch: { userId: number; missionId: number };
+  SquatMission: { userId: number; missionId: number };
   ReadingMission: { userId: number; missionId: number };
   TriviaMission: { userId: number; missionId: number };
 };
@@ -152,6 +154,7 @@ export default function App() {
               {() => <MainTabs userId={userId} onLogout={() => setUserId(null)} />}
             </Drawer.Screen>
             <Drawer.Screen name="DontTouch" component={DontTouchScreen} />
+            <Drawer.Screen name="SquatMission" component={MisionSquatsPantalla} />
             <Drawer.Screen name="ReadingMission" component={ReadingMissionScreen} />
             <Drawer.Screen name="TriviaMission" component={TriviaMissionScreen} />
           </>
