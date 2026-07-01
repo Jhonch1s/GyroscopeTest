@@ -1,5 +1,6 @@
 import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 import React, { useCallback, useEffect, useState } from "react";
+import { useStepCounter } from "../hooks/useStepCounter";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
   ActivityIndicator,
@@ -39,7 +40,17 @@ export default function Home({ userId, onLogout }: Props) {
   const [editNombre, setEditNombre] = useState("");
   const [editFoto, setEditFoto] = useState<string | null>(null);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [stepsClaimed, setStepsClaimed] = useState(false);
 
+  const STEPS_GOAL = 1500;
+  const { steps, isAvailable, startTracking, stopTracking } = useStepCounter();
+
+  useEffect(() => {
+    startTracking();
+    return () => {
+      stopTracking();
+    };
+  }, [startTracking, stopTracking]);
 
   const openEditModal = () => {
     if (perfil) {
@@ -261,6 +272,32 @@ export default function Home({ userId, onLogout }: Props) {
         </Text>
 
         <View style={styles.activitiesList}>
+          <View style={[styles.activityCard, { borderColor: '#f1c40f', borderWidth: steps >= STEPS_GOAL && !stepsClaimed ? 2 : 0 }]}>
+            <View style={styles.activityContent}>
+              <Text style={styles.activityTitle}>🚶 Caminar</Text>
+              <Text style={styles.activityTitle}>{steps}/{STEPS_GOAL} pasos</Text>
+              <View style={styles.badgesRow}>
+                <Text style={[styles.difficultyBadge, { backgroundColor: '#2ecc71' }]}>Diaria</Text>
+              </View>
+              <View style={{ height: 8, backgroundColor: '#333', borderRadius: 4, marginTop: 8, width: '100%' }}>
+                <View style={{ height: '100%', backgroundColor: '#f1c40f', borderRadius: 4, width: `${Math.min((steps / STEPS_GOAL) * 100, 100)}%` }} />
+              </View>
+            </View>
+            <TouchableOpacity
+              style={[styles.claimButton, { backgroundColor: steps >= STEPS_GOAL && !stepsClaimed ? '#2ecc71' : '#555' }]}
+              onPress={() => {
+                if (steps >= STEPS_GOAL && !stepsClaimed) {
+                  setStepsClaimed(true);
+                  setShowPackModal(true);
+                }
+              }}
+              disabled={steps < STEPS_GOAL || stepsClaimed}
+            >
+              <Text style={styles.claimButtonText}>
+                {stepsClaimed ? 'Completado' : steps >= STEPS_GOAL ? 'Reclamar' : 'En progreso'}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           {misiones.length === 0 ? (
             <Text style={{ color: "#888" }}>No hay misiones disponibles.</Text>
