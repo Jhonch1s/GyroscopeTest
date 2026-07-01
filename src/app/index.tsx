@@ -63,7 +63,6 @@ const Drawer = createDrawerNavigator();
   const routes = [
     { key: "home", title: "Inicio" },
     { key: "catalog", title: "Catálogo" },
-    { key: "cardGenerator", title: "Generador" },
   ];
 
   const handleCardSelect = (cardId: number) => {
@@ -76,8 +75,6 @@ const Drawer = createDrawerNavigator();
         return <Home userId={userId!} onLogout={onLogout} />;
       case "catalog":
         return <CatalogScreen userId={userId!} onCardSelect={handleCardSelect} />;
-      case "cardGenerator":
-        return <CardGeneratorScreen />;
       default:
         return null;
     }
