@@ -1,8 +1,8 @@
 import { RootStackParamList } from "@/app";
 import { supabase } from "@/lib/supabase";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { Alert, ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -88,14 +88,13 @@ export default function ReadingMissionScreen() {
     }
   }, [volverHome, navigation]);
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('blur', () => {
-      setTimer(initialTime);            
-      setVolverHome(false);    
-    });
-
-    return unsubscribe;
-  }, [navigation]);
+  useFocusEffect(
+    useCallback(() => {
+      setTimer(initialTime);
+      setCompleted(false);
+      setVolverHome(false);
+    }, [initialTime])
+  );
 
   if (loading) {
     return (

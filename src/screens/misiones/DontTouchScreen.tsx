@@ -1,8 +1,8 @@
 import { RootStackParamList } from "@/app";
 import { supabase } from "@/lib/supabase";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import React, { useEffect, useState, } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Animated, {
   SensorType,
@@ -19,7 +19,6 @@ const THRESHOLD = 0.1;
 export default function DontTouchScreen() {
 
   const sensor = useAnimatedSensor(SensorType.GYROSCOPE, { interval: 100 });
-  const { x, y } = sensor.sensor.value;
   const texto = "esta es la pantalla donde esta el cronometro";
   const route = useRoute();
   const { userId, missionId } = route.params as { userId: number; missionId: number };
@@ -120,14 +119,13 @@ export default function DontTouchScreen() {
   }
   }, [volverHome, navigation]);
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('blur', () => {
-      setTimer(initialTime);            
-      setVolverHome(false);    
-    });
-
-  return unsubscribe;
-  }, [navigation]);
+  useFocusEffect(
+    useCallback(() => {
+      setTimer(initialTime);
+      setCompleted(false);
+      setVolverHome(false);
+    }, [initialTime])
+  );
 
   
   
@@ -144,9 +142,6 @@ export default function DontTouchScreen() {
         <Text style={styles.texto}>{movido ? "TelefonoMovido" : ""}</Text>      
       </View>
 
-      <Animated.Text style={textStyle}>
-        {`x: ${sensor.sensor.value.x.toFixed(3)}  y: ${sensor.sensor.value.y.toFixed(3)}  z: ${sensor.sensor.value.z.toFixed(3)}`}
-      </Animated.Text>
 
       {/* Mensaje animado según movimiento */}
       <Animated.Text style={[styles.message, messageStyle]}>

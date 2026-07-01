@@ -15,6 +15,18 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
+import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
+
+LogBox.ignoreLogs([
+  "Can't perform a React state update on a component that hasn't mounted yet",
+  "Expo AV has been deprecated",
+  "[expo-av]"
+]);
+
+configureReanimatedLogger({
+  level: ReanimatedLogLevel.warn,
+  strict: false,
+});
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { TabBar, TabView } from "react-native-tab-view";
 import CardViewerScreen from "../screens/CardViewerScreen";
@@ -35,8 +47,6 @@ const Drawer = createDrawerNavigator();
 
 
  function MainTabs({ userId, onLogout }: { userId: number, onLogout: () => void }) {
-
-  LogBox.ignoreLogs(["Can't perform a React state update on a component that hasn't mounted yet"]);
   const layout = useWindowDimensions();
   const [index, setIndex] = React.useState(0);
   const [selectedCardId, setSelectedCardId] = React.useState<

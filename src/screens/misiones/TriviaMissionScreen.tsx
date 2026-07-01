@@ -68,27 +68,13 @@ export default function TriviaMissionScreen() {
 
       Alert.alert(
         "¡Incorrecto!", 
-        `La respuesta correcta era: ${respuestaCorrectaTexto}. Misión fallida por hoy.`,
-        [{ text: "Aceptar", onPress: () => failMission() }]
+        `La respuesta correcta era: ${respuestaCorrectaTexto}. Inténtalo nuevamente.`,
+        [{ text: "Aceptar", onPress: () => navigation.navigate('MainTabs') }]
       );
     }
   };
 
-  const failMission = async () => {
-    if (userId && missionId) {
-      const { error } = await supabase
-        .from('progreso_usuario')
-        .update({ fallado: true })
-        .eq('perfil_id', userId)
-        .eq('mision_id', missionId)
-        .eq('fecha', new Date().toISOString().split('T')[0]);
 
-      if (error) {
-        console.error("Error al fallar misión:", error);
-      }
-    }
-    navigation.navigate('MainTabs');
-  };
 
   const completeMission = async () => {
     if (userId && missionId) {

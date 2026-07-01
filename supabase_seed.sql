@@ -183,8 +183,6 @@ INSERT INTO carta (id, nombre_carta, categoria, borde, imagen, centro, normal_ma
 INSERT INTO mision (id, tipo, nombre, descripcion, recompensa) VALUES 
 (1, 'Fácil', 'No Mover el dispositivo', 'No muevas el dispositivo durante el tiempo restante del cronometro (1 minuto).', 'Comun'),
 (2, 'Fácil', 'Lectura de un texto educativo', 'Lee un texto educativo por al menos 1 minuto.', 'Comun'),
-(3, 'Media', 'Breve caminata', 'Realiza 100 pasos.', 'Raro'),
-(4, 'Difícil', 'Caminata', 'Realiza 1000 pasos.', 'Epico'),
 (5, 'Difícil', 'No mover el dispositivo', 'No muevas el dispositivo durante 10 minutos.', 'Epico'),
 (6, 'Media', 'Lectura completa', 'Lee por 10 minutos un texto educativo completo.', 'Epico'),
 (7, 'Media', 'Trivia UTEC', 'Responde 3 preguntas sobre la UTEC sin equivocarte.', 'Raro');

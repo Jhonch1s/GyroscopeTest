@@ -153,7 +153,7 @@ export default function CatalogScreen({ userId, onCardSelect }: Props) {
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
-      <Text style={styles.emptyIcon}>{"📦"}</Text>
+      <Text style={[styles.emptyIcon, { color: 'red' }]}>{"X"}</Text>
       <Text style={styles.emptyTitle}>Tu colección está vacía</Text>
       <Text style={styles.emptySubtitle}>
         Completa misiones en Inicio para obtener sobres de cartas
